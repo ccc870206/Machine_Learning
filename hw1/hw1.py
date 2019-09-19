@@ -8,8 +8,8 @@ def load_data():
         for line in f.readlines():
             input_file.append(line.strip().split(','))
     input_file = np.asarray(input_file, dtype=float)
-    # return input_file, int(input('input n:')), float(input('input lambda:'))
-    return input_file, 3, 10000
+    return input_file, int(input('input n:')), float(input('input lambda:'))
+    # return input_file, 3, 10000
 
 
 def build_design_matrix(n, x):
@@ -64,20 +64,26 @@ def backward_substitution(matrix, target):
     return solution
 
 
+def output(para, total_error):
+    equation = ''
+    for i in range(para.shape[0] - 1,-1,-1):
+        if i == 0:
+            equation += (str(para[i][0]))
+        else:
+            equation += (str(para[i][0]) + ' x^' + str(i) + ' + ')
+
+    print('Fitting line:', equation)
+    print('Total error:', total_error)
+
 data, n, lda = load_data()
 A = build_design_matrix(n, data[:, 0])
 b = data[:, 1]
 # print(data)
 At = np.transpose(A)
 AtxA = np.matmul(At, A) + build_identity_matrix(n, lda)
-# print(AtxA)
 Atxb = np.matmul(At, b)
-# print(Atxb)
 
 L, U = LU_factorization(AtxA)
-# print('L',L)
-# print('U',U)
-
 y = forward_substitution(L, Atxb)
 x = backward_substitution(U, y)
 # print(x)
@@ -86,7 +92,9 @@ F = np.matmul(A, x)
 plt.scatter(data[:,0],F)
 
 error = np.sum(np.power(F[:, 0] - b, 2))
-print('error:',error)
+# print('error:',error)
+print('LSE:')
+output(x, error)
 
 plt.scatter(data[:, 0],b)
 
