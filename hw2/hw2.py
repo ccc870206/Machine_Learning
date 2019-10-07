@@ -106,7 +106,7 @@ def compute_probability(train_image, train_label):
             for i in range(32):
                 dict_pixel[row * 28 + col][i] = dict_pixel[row * 28 + col].get(i, 0)
                 for j in range(10):
-                    dict_pixel_cond[j][row * 28 + col] = dict_pixel_cond[j].get(0, {})
+                    dict_pixel_cond[j][row * 28 + col] = dict_pixel_cond[j].get(row * 28 + col, {})
                     dict_pixel_cond[j][row * 28 + col][i] = \
                         dict_pixel_cond[j][row * 28 + col].get(i, 0)
 
@@ -122,8 +122,8 @@ def compute_probability(train_image, train_label):
                 dict_pixel_cond[train_label[num][0]][row*28+col][value] += 1
                 # print(train_label[num][0], row*28+col, value)
                 # print()
-                print("pixel:",dict_pixel[row*28+col][value])
-                print("cond:",dict_pixel_cond[train_label[num][0]][row*28+col][value])
+                # print("pixel:",dict_pixel[row*28+col][value])
+                # print("cond:",dict_pixel_cond[train_label[num][0]][row*28+col][value])
         dict_label[train_label[num][0]] += 1
     # print(dict_pixel_cond[0])
     return dict_pixel, dict_label, dict_pixel_cond
@@ -137,12 +137,12 @@ filename_test_label = '/Users/yen/Downloads/t10k-labels.idx1-ubyte'
 # save_data(filename_train_image, filename_train_label, filename_test_image, filename_test_label)
 
 
-load_data()
-train_image_conti, train_image_discrete, test_image_conti, test_image_discrete, train_label, test_label = load_data()
-
-
-dict_pixel, dict_label, dict_pixel_cond = compute_probability(train_image_discrete[:][:][:10], train_label)
-
+# load_data()
+# train_image_conti, train_image_discrete, test_image_conti, test_image_discrete, train_label, test_label = load_data()
+#
+#
+# dict_pixel, dict_label, dict_pixel_cond = compute_probability(train_image_discrete, train_label)
+#
 # np.save('dict_pixel', dict_pixel)
 # np.save('dict_label', dict_label)
 # np.save('dict_pixel_cond', dict_pixel_cond)
@@ -152,7 +152,7 @@ dict_pixel, dict_label, dict_pixel_cond = compute_probability(train_image_discre
 # dict_pixel_cond = np.load('dict_pixel_cond.npy', allow_pickle=True).item()
 # print(dict_pixel)
 # print(dict_label)
-# print(dict_pixel_cond)
+# print(dict_pixel_cond[0])
 
 # for row in range(test_image_discrete.shape[0]):
 #     for col in range(test_image_discrete[1]):
