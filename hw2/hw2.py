@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 
 def read_image(filename):
@@ -129,6 +130,68 @@ def compute_probability(train_image, train_label):
     return dict_pixel, dict_label, dict_pixel_cond
 
 
+def compute_posterior(img, labels, dict_pixel, dict_label, dict_pixel_cond):
+    total = 60000
+    # total_cond = 0
+    # total_pixel = 60000
+    # total_pixel = 28*28
+    # print(dict_label[int(label)])
+
+    # p_pixel = np.zeros((28, 28))
+
+    # p_pixel = 1
+    # p_cond = np.zeros((28, 28))
+
+    # p_cond = 1
+    # p_posterior = np.zeros((28, 28))
+    posterior = np.empty(10)
+    for label in range(10):
+        p_pixel = 0
+        p_cond = 0
+        p_label = dict_label[int(label)] / total
+        print("p_label:", p_label)
+        for row in range(img.shape[0]):
+            for col in range(img.shape[1]):
+                """
+                # print(row, col)
+                # print('dict pixel cond:', dict_pixel_cond[int(label)][row*28+col][img[row][col]])
+                # print('label:', dict_label[int(label)])
+                p_cond[row][col] = dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)]
+                p_pixel[row][col] = dict_pixel[row*28+col][img[row][col]] / total
+                # print(p_pixel[row][col])
+                p_posterior[row][col] = p_cond[row][col]*p_label / p_pixel[row][col]
+                """
+                value = img[row][col]
+                # p_pixel = p_pixel * dict_pixel[row*28+col][img[row][col]] / total
+                # p_cond = p_cond * dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)]
+                # print("pixel", math.log(dict_pixel[row*28+col][value] / total))
+                # print("cond", math.log(dict_pixel_cond[int(label)][row*28+col][value] / dict_label[int(label)]))
+                p_pixel += (math.log(dict_pixel[row*28+col][img[row][col]] / total))
+                # print(dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)])
+                p_cond += (math.log((dict_pixel_cond[int(label)][row*28+col][img[row][col]]+10e-7) / dict_label[int(label)]))
+        p_cond += math.log(p_label)
+    # p_cond = p_cond * p_label
+        posterior[label] = p_cond
+        # print("p_pixel:", p_pixel)
+        print(label, p_cond)
+
+    posterior /= (np.sum(posterior))
+    print(posterior)
+    print(np.argmin(posterior))
+    # print(p_cond, math.log(p_cond))
+    # print(p_pixel, math.log(p_pixel))
+    # print(p_cond / p_pixel, math.log(p_cond) / math.log(p_pixel), math.log(p_cond / p_pixel))
+    # print(pow(math.e, (p_cond / p_pixel)))
+
+    # print(np.sum(p_posterior))
+    # print("p_cond:", p_cond)
+    # print("p_pixel:", p_pixel)
+
+
+
+
+
+
 filename_train_image = '/Users/yen/Downloads/train-images.idx3-ubyte'
 filename_train_label = '/Users/yen/Downloads/train-labels.idx1-ubyte'
 filename_test_image = '/Users/yen/Downloads/t10k-images.idx3-ubyte'
@@ -136,9 +199,7 @@ filename_test_label = '/Users/yen/Downloads/t10k-labels.idx1-ubyte'
 
 # save_data(filename_train_image, filename_train_label, filename_test_image, filename_test_label)
 
-
-# load_data()
-# train_image_conti, train_image_discrete, test_image_conti, test_image_discrete, train_label, test_label = load_data()
+train_image_conti, train_image_discrete, test_image_conti, test_image_discrete, train_label, test_label = load_data()
 #
 #
 # dict_pixel, dict_label, dict_pixel_cond = compute_probability(train_image_discrete, train_label)
@@ -147,9 +208,14 @@ filename_test_label = '/Users/yen/Downloads/t10k-labels.idx1-ubyte'
 # np.save('dict_label', dict_label)
 # np.save('dict_pixel_cond', dict_pixel_cond)
 
-# dict_pixel = np.load('dict_pixel.npy', allow_pickle=True).item()
-# dict_label = np.load('dict_label.npy', allow_pickle=True).item()
-# dict_pixel_cond = np.load('dict_pixel_cond.npy', allow_pickle=True).item()
+dict_pixel = np.load('dict_pixel.npy', allow_pickle=True).item()
+dict_label = np.load('dict_label.npy', allow_pickle=True).item()
+dict_pixel_cond = np.load('dict_pixel_cond.npy', allow_pickle=True).item()
+
+# print(dict_pixel[7])
+# print(dict_pixel_cond[7])
+compute_posterior(test_image_discrete[0], test_label[0], dict_pixel, dict_label, dict_pixel_cond)
+
 # print(dict_pixel)
 # print(dict_label)
 # print(dict_pixel_cond[0])
