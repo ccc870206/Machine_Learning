@@ -130,7 +130,7 @@ def compute_probability(train_image, train_label):
     return dict_pixel, dict_label, dict_pixel_cond
 
 
-def compute_posterior(img, labels, dict_pixel, dict_label, dict_pixel_cond):
+def label_prediction(img_array, labels, dict_pixel, dict_label, dict_pixel_cond):
     total = 60000
     # total_cond = 0
     # total_pixel = 60000
@@ -144,40 +144,52 @@ def compute_posterior(img, labels, dict_pixel, dict_label, dict_pixel_cond):
 
     # p_cond = 1
     # p_posterior = np.zeros((28, 28))
-    posterior = np.empty(10)
-    for label in range(10):
-        p_pixel = 0
-        p_cond = 0
-        p_label = dict_label[int(label)] / total
-        print("p_label:", p_label)
-        for row in range(img.shape[0]):
-            for col in range(img.shape[1]):
-                """
-                # print(row, col)
-                # print('dict pixel cond:', dict_pixel_cond[int(label)][row*28+col][img[row][col]])
-                # print('label:', dict_label[int(label)])
-                p_cond[row][col] = dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)]
-                p_pixel[row][col] = dict_pixel[row*28+col][img[row][col]] / total
-                # print(p_pixel[row][col])
-                p_posterior[row][col] = p_cond[row][col]*p_label / p_pixel[row][col]
-                """
-                value = img[row][col]
-                # p_pixel = p_pixel * dict_pixel[row*28+col][img[row][col]] / total
-                # p_cond = p_cond * dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)]
-                # print("pixel", math.log(dict_pixel[row*28+col][value] / total))
-                # print("cond", math.log(dict_pixel_cond[int(label)][row*28+col][value] / dict_label[int(label)]))
-                p_pixel += (math.log(dict_pixel[row*28+col][img[row][col]] / total))
-                # print(dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)])
-                p_cond += (math.log((dict_pixel_cond[int(label)][row*28+col][img[row][col]]+10e-7) / dict_label[int(label)]))
-        p_cond += math.log(p_label)
-    # p_cond = p_cond * p_label
-        posterior[label] = p_cond
-        # print("p_pixel:", p_pixel)
-        print(label, p_cond)
 
-    posterior /= (np.sum(posterior))
-    print(posterior)
-    print(np.argmin(posterior))
+    wrong = 0
+    # for i in range(10000):
+    for i in range(10000):
+        img = img_array[i]
+        ground_truth = labels[i]
+        posterior = np.empty(10)
+        for label in range(10):
+            p_pixel = 0
+            p_cond = 0
+            p_label = dict_label[int(label)] / total
+            # print("p_label:", p_label)
+            for row in range(img.shape[0]):
+                for col in range(img.shape[1]):
+                    """
+                    # print(row, col)
+                    # print('dict pixel cond:', dict_pixel_cond[int(label)][row*28+col][img[row][col]])
+                    # print('label:', dict_label[int(label)])
+                    p_cond[row][col] = dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)]
+                    p_pixel[row][col] = dict_pixel[row*28+col][img[row][col]] / total
+                    # print(p_pixel[row][col])
+                    p_posterior[row][col] = p_cond[row][col]*p_label / p_pixel[row][col]
+                    """
+                    value = img[row][col]
+                    # p_pixel = p_pixel * dict_pixel[row*28+col][img[row][col]] / total
+                    # p_cond = p_cond * dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)]
+                    # print("pixel", math.log(dict_pixel[row*28+col][value] / total))
+                    # print("cond", math.log(dict_pixel_cond[int(label)][row*28+col][value] / dict_label[int(label)]))
+                    p_pixel += (math.log((dict_pixel[row*28+col][img[row][col]]+10e-7) / total))
+                    # print(dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)])
+                    p_cond += (math.log((dict_pixel_cond[int(label)][row*28+col][img[row][col]]+10e-7) / dict_label[int(label)]))
+            p_cond += math.log(p_label)
+        # p_cond = p_cond * p_label
+            posterior[label] = p_cond
+            # print("p_pixel:", p_pixel)
+            # print(label, p_cond)
+
+        posterior /= (np.sum(posterior))
+        # print(posterior)
+        prediction = np.argmin(posterior)
+        if prediction != ground_truth:
+            wrong += 1
+            print("prediction:", prediction, "ground_truth:", ground_truth)
+        # print(np.argmin(posterior))
+    print("wrong:", wrong)
+    print("error rate:", wrong/10000)
     # print(p_cond, math.log(p_cond))
     # print(p_pixel, math.log(p_pixel))
     # print(p_cond / p_pixel, math.log(p_cond) / math.log(p_pixel), math.log(p_cond / p_pixel))
@@ -188,6 +200,13 @@ def compute_posterior(img, labels, dict_pixel, dict_label, dict_pixel_cond):
     # print("p_pixel:", p_pixel)
 
 
+# def pixel_prediction(dict_pixel, dict_label, dict_pixel_cond):
+#     p_pixel = 0
+#     label = 0
+#     for row in range(28):
+#         for col in range(28):
+#             for pixel
+#             p_pixel += (math.log((dict_pixel[row * 28 + col][img[row][col]] + 10e-7) / total))
 
 
 
@@ -214,7 +233,8 @@ dict_pixel_cond = np.load('dict_pixel_cond.npy', allow_pickle=True).item()
 
 # print(dict_pixel[7])
 # print(dict_pixel_cond[7])
-compute_posterior(test_image_discrete[0], test_label[0], dict_pixel, dict_label, dict_pixel_cond)
+label_prediction(test_image_discrete, test_label, dict_pixel, dict_label, dict_pixel_cond)
+# label_prediction(dict_pixel, dict_label, dict_pixel_cond)
 
 # print(dict_pixel)
 # print(dict_label)
