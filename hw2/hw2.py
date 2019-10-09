@@ -176,6 +176,7 @@ def label_prediction(img_array, labels, dict_pixel, dict_label, dict_pixel_cond)
                     # print(dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)])
                     p_cond += (math.log((dict_pixel_cond[int(label)][row*28+col][img[row][col]]+10e-7) / dict_label[int(label)]))
             p_cond += math.log(p_label)
+            # p_cond += math.log(1/10)
         # p_cond = p_cond * p_label
             posterior[label] = p_cond
             # print("p_pixel:", p_pixel)
@@ -200,13 +201,48 @@ def label_prediction(img_array, labels, dict_pixel, dict_label, dict_pixel_cond)
     # print("p_pixel:", p_pixel)
 
 
-# def pixel_prediction(dict_pixel, dict_label, dict_pixel_cond):
-#     p_pixel = 0
-#     label = 0
-#     for row in range(28):
-#         for col in range(28):
-#             for pixel
-#             p_pixel += (math.log((dict_pixel[row * 28 + col][img[row][col]] + 10e-7) / total))
+def pixel_prediction(dict_pixel, dict_label, dict_pixel_cond):
+    p_pixel = 1
+    label = 4
+
+    imagination = np.zeros((28, 28))
+    test_imagination = np.zeros((28, 28))
+    # for row in range(4, 24):
+    p_label = dict_label[label]/60000
+    # for row in range(1):
+    for row in range(28):
+        # row = 5
+        # for col in range(4, 24):
+        # for col in range(1):
+        for col in range(28):
+            # col = 4
+            posterior = np.empty(32)
+            for pixel in range(32):
+                # p_pixel = (math.log((dict_pixel_cond[label][row*28+col][pixel]+10e-7) /
+                #                     (dict_pixel[row*28+col][pixel] + 10e-7)))
+                p_pixel = (math.log((dict_pixel_cond[label][row * 28 + col][pixel] + 1) / dict_label[label]))
+                print("cond:", (dict_pixel_cond[label][row*28+col][pixel]+1))
+                # print("all:", (dict_pixel[row*28+col][pixel] + 10e-7))
+                print("all:", p_label)
+                print("log:", p_pixel)
+                # p_pixel = (math.log((dict_pixel_cond[label][row * 28 + col][pixel] + 10e-7) / (1/32)))
+                # print((dict_pixel_cond[label][row*28+col][pixel]+10e-7) / (dict_pixel[row*28+col][pixel] + 10e-7))
+                # p_pixel += math.log(dict_pixel[row*28+col][pixel] + 10e-7)
+                # p_pixel += math.log(dict_pixel[row*28+col][pixel] + 10e-7)
+                p_pixel += math.log(p_label)
+                # print("log 1/32", math.log(1/32))
+                print("log p_label", math.log(1/32))
+                posterior[pixel] = p_pixel
+            posterior /= (np.sum(posterior))
+            print(row, col)
+            print(np.argmin(posterior))
+            print(posterior)
+            test_imagination[row][col] = np.argmin(posterior)
+            if np.argmin(posterior) > 15:
+                imagination[row][col] = 1
+    # print(test_imagination)
+    plt.imshow(imagination, 'Greys')
+    plt.show()
 
 
 
@@ -231,10 +267,51 @@ dict_pixel = np.load('dict_pixel.npy', allow_pickle=True).item()
 dict_label = np.load('dict_label.npy', allow_pickle=True).item()
 dict_pixel_cond = np.load('dict_pixel_cond.npy', allow_pickle=True).item()
 
+# print(dict_pixel_cond)
+count = 0
+zero_count = 0
+for key1, value1 in dict_pixel_cond.items():
+    for key2, value2 in value1.items():
+        for key3, value3 in value2.items():
+            count += 1
+            print(value2[0])
+            if value2[0] != dict_label[key1] and value3 == 0:
+                zero_count += 1
+# 38635
+# 103332
+# 250880
+
+
+# for key2, value2 in dict_pixel.items():
+#     for key3, value3 in value2.items():
+#         count += 1
+#         if value2[0] != 60000 and value3 == 0:
+#             zero_count += 1
+print(dict_pixel)
+print(count)
+print(zero_count)
+# 2881
+# 4989
+# 25098
+
 # print(dict_pixel[7])
 # print(dict_pixel_cond[7])
-label_prediction(test_image_discrete, test_label, dict_pixel, dict_label, dict_pixel_cond)
-# label_prediction(dict_pixel, dict_label, dict_pixel_cond)
+# label_prediction(test_image_discrete, test_label, dict_pixel, dict_label, dict_pixel_cond)
+# pixel_prediction(dict_pixel, dict_label, dict_pixel_cond)
+
+# SPEC PIC
+# str_9 = "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+# str_0 = "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+#
+# arr = str.split(" ")
+# arr_np = np.array(arr, dtype=int).reshape((28,28))
+# print(arr_np.shape)
+# arr_np = np.reshape(arr_np, (28, 28))
+#
+# print(arr_np)
+# plt.imshow(arr_np, 'Greys')
+# plt.show()
+
 
 # print(dict_pixel)
 # print(dict_label)
@@ -246,3 +323,4 @@ label_prediction(test_image_discrete, test_label, dict_pixel, dict_label, dict_p
 
 # plt.imshow(test_image_discrete[0], 'Greys')
 # plt.show()
+
