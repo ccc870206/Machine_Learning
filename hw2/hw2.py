@@ -44,30 +44,40 @@ def read_label(filename):
     return labels
 
 
-def load_data(train_image, train_label, test_image, test_label):
-    train_image_conti, train_image_discrete = read_image(train_image)
-    test_image_conti, test_image_discrete = read_image(test_image)
-    train_label = read_label(train_label)
-    test_label = read_label(test_label)
+def get_filename():
+    filename_train_image = '/Users/yen/Downloads/train-images.idx3-ubyte'
+    filename_train_label = '/Users/yen/Downloads/train-labels.idx1-ubyte'
+    filename_test_image = '/Users/yen/Downloads/t10k-images.idx3-ubyte'
+    filename_test_label = '/Users/yen/Downloads/t10k-labels.idx1-ubyte'
+    return filename_train_image, filename_train_label, filename_test_image, filename_test_label
+
+
+def load_data():
+    filename_train_image, filename_train_label, filename_test_image, filename_test_label = get_filename()
+    train_image_conti, train_image_discrete = read_image(filename_train_image)
+    test_image_conti, test_image_discrete = read_image(filename_test_image)
+    train_label = read_label(filename_train_label)
+    test_label = read_label(filename_test_label)
 
     return train_image_conti, train_image_discrete, test_image_conti, test_image_discrete, train_label, test_label
 
 
-def save_pkl_data(train_image, train_label, test_image, test_label):
-    conti, discrete = read_image(train_image)
+def save_pkl_data():
+    filename_train_image, filename_train_label, filename_test_image, filename_test_label = get_filename()
+    conti, discrete = read_image(filename_train_image)
     with open('train_image_conti.pkl', 'wb') as f:
         pkl.dump(conti, f)
     with open('train_image_discrete.pkl', 'wb') as f:
         pkl.dump(discrete, f)
-    conti, discrete = read_image(test_image)
+    conti, discrete = read_image(filename_test_image)
     with open('test_image_conti.pkl', 'wb') as f:
         pkl.dump(conti, f)
     with open('test_image_discrete.pkl', 'wb') as f:
         pkl.dump(discrete, f)
     with open('train_label.pkl', 'wb') as f:
-        pkl.dump(read_label(train_label), f)
+        pkl.dump(read_label(filename_train_label), f)
     with open('test_label.pkl', 'wb') as f:
-        pkl.dump(read_label(test_label), f)
+        pkl.dump(read_label(filename_test_label), f)
 
 
 def load_pkl_data():
@@ -357,12 +367,12 @@ def pixel_prediction_continuous(dict_pixel, dict_label, dict_pixel_cond, all):
 
 def discrete_mode():
     # Load preprocessing data
-    _, train_image_discrete, _, test_image_discrete, train_label, test_label = load_pkl_data()
-    dict_pixel, dict_label, dict_pixel_cond = load_discrete_dict()
+    # _, train_image_discrete, _, test_image_discrete, train_label, test_label = load_pkl_data()
+    # dict_pixel, dict_label, dict_pixel_cond = load_discrete_dict()
 
     # Load raw data and process
-    # _, train_image_discrete, _, test_image_discrete, train_label, test_label = load_data()
-    # dict_pixel, dict_label, dict_pixel_cond = compute_discrete_probability(train_image_discrete, train_label)
+    _, train_image_discrete, _, test_image_discrete, train_label, test_label = load_data()
+    dict_pixel, dict_label, dict_pixel_cond = compute_discrete_probability(train_image_discrete, train_label)
 
     error_rate = label_prediction_discrete(test_image_discrete, test_label, dict_pixel, dict_label, dict_pixel_cond)
     print("Imagination of numbers in Bayesian classifier:")
@@ -385,10 +395,6 @@ def continuous_mode():
 
 
 if __name__ == "__main__":
-    filename_train_image = '/Users/yen/Downloads/train-images.idx3-ubyte'
-    filename_train_label = '/Users/yen/Downloads/train-labels.idx1-ubyte'
-    filename_test_image = '/Users/yen/Downloads/t10k-images.idx3-ubyte'
-    filename_test_label = '/Users/yen/Downloads/t10k-labels.idx1-ubyte'
     option = int(input("option:"))
     start = timeit.default_timer()
     if option == 0:
