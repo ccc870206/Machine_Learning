@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import pickle as pkl
+import scipy.stats
 
 
 def read_image(filename):
@@ -26,8 +27,6 @@ def read_image(filename):
                 img_conti[num][row][column] = pixel
                 img_discrete[num][row][column] = int(pixel // 8)
 
-    # plt.imshow(img_discrete[0], 'Greys')
-    # plt.show()
     return img_conti, img_discrete
 
 
@@ -175,38 +174,6 @@ def compute_discrete_probability(train_image, train_label):
     return dict_pixel, dict_label, dict_pixel_cond
 
 
-def compute_continuous_probability_old(train_image, train_label):
-    all = (np.mean(train_image), np.std(train_image))
-
-    dict_label = {}
-    dict_pixel = {}
-    dict_pixel_cond = {}
-
-    label_arr = [[]] * 10
-    pixel_arr = [[]] * 28 * 28
-    pixel_cond_arr = [[[]]*28*28] * 10
-    # print(train_image[0][:][:])
-    #
-    for num in range(train_image.shape[0]):
-    # for num in range(0, 10):
-        label_arr[int(train_label[num])].append(train_image[num][:][:])
-        for row in range(train_image.shape[1]):
-            for col in range(train_image.shape[2]):
-                pixel_arr[row * 28 + col].append(train_image[num][row][col])
-                pixel_cond_arr[int(train_label[num])][row * 28 + col].append(train_image[num][row][col])
-
-
-    for i in range(10):
-        dict_label[i] = (np.mean(label_arr[i]), np.std(label_arr[i]))
-        dict_pixel_cond[i] = {}
-        for j in range(28*28):
-            dict_pixel_cond[i][j] = (np.mean(pixel_cond_arr[i][j]), np.std(pixel_cond_arr[i][j]))
-    for i in range(28*28):
-        dict_pixel[i] = (np.mean(pixel_arr[i]), np.std(pixel_arr[i]))
-
-    return dict_pixel, dict_label, dict_pixel_cond, all
-
-
 def compute_continuous_probability(train_image, train_label):
     all = (np.mean(train_image), np.std(train_image))
     total = 60000
@@ -313,8 +280,17 @@ def compute_continuous_probability(train_image, train_label):
 
 
 def gaussian_distribution(mean, std, x):
-    constant = 1/(std*pow(2*math.pi, 1/2))
-    power = -1/2 * pow((x-mean) / std, 2)
+    # print(std)
+    if std == 0:
+        return 10e-7
+    constant = 1/(std * pow(2*math.pi, 1/2))
+    # if (std * pow(2*math.pi, 1/2)) == 0:
+    #     print(std * pow(2*math.pi, 1/2))
+    #     print(std)
+    # print(constant)
+    power = -(1/2) * pow((x-mean) / std, 2)
+    # print(power)
+    # print(constant * pow(math.e, power))
     return constant * pow(math.e, power)
 
 
@@ -334,15 +310,21 @@ def label_prediction_continuous(img_array, labels, dict_pixel, dict_label, dict_
     # p_posterior = np.zeros((28, 28))
 
     wrong = 0
-    # for i in range(10000):
     for i in range(10):
+    # for i in range(10):
         img = img_array[i]
         ground_truth = labels[i]
         posterior = np.empty(10)
         for label in range(10):
             p_pixel = 0
             p_cond = 0
-            p_label = gaussian_distribution(all[0], all[1], label)
+            # p_label = dict_label[label] / total
+            # print(dict_label[1])
+            p_label = dict_label[int(label)] / total
+            # p_label = gaussian_distribution(all[0], pow(all[1], 1/2), dict_label[label][0])
+            # print(pow(all[1], 1/2))
+            # print(dict_label[label][1])
+            # print("p_label:", p_label)
             # print("p_label:", p_label)
             for row in range(img.shape[0]):
                 for col in range(img.shape[1]):
@@ -360,20 +342,31 @@ def label_prediction_continuous(img_array, labels, dict_pixel, dict_label, dict_
                     # p_cond = p_cond * dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)]
                     # print("pixel", math.log(dict_pixel[row*28+col][value] / total))
                     # print("cond", math.log(dict_pixel_cond[int(label)][row*28+col][value] / dict_label[int(label)]))
-                    p_pixel += (math.log((dict_pixel[row * 28 + col][img[row][col]] + 10e-7) / total))
+
+                    # p_pixel += (math.log((dict_pixel[row * 28 + col][img[row][col]] + 10e-7) / total))
+
                     # print(dict_pixel_cond[int(label)][row*28+col][img[row][col]] / dict_label[int(label)])
+                    # print(gaussian_distribution(dict_pixel_cond[int(label)][row * 28 + col][0],
+                    #                           dict_pixel_cond[int(label)][row * 28 + col][1],
+                    #                           img[row][col])+10e-7)
                     p_cond += (math.log(
                         gaussian_distribution(dict_pixel_cond[int(label)][row * 28 + col][0],
                                               dict_pixel_cond[int(label)][row * 28 + col][1],
-                                              img[row][col])))
+                                              img[row][col])+10e-7))
+
+
             p_cond += math.log(p_label)
             # p_cond += math.log(1/10)
             # p_cond = p_cond * p_label
+
+
             posterior[label] = p_cond
+        print(posterior)
             # print("p_pixel:", p_pixel)
             # print(label, p_cond)
-
+        # print(posterior)
         posterior /= (np.sum(posterior))
+        # print(posterior)
         # print(posterior)
         prediction = np.argmin(posterior)
         if prediction != ground_truth:
@@ -390,6 +383,58 @@ def label_prediction_continuous(img_array, labels, dict_pixel, dict_label, dict_
     # print(np.sum(p_posterior))
     # print("p_cond:", p_cond)
     # print("p_pixel:", p_pixel)
+
+
+def pixel_prediction_continuous(dict_pixel, dict_label, dict_pixel_cond, all):
+    p_pixel = 1
+    label = 9
+
+    imagination = np.zeros((28, 28))
+    test_imagination = np.zeros((28, 28))
+    # for row in range(4, 24):
+    # p_label = gaussian_distribution(all[0], pow(all[1], 1/2), dict_label[label][0])
+    # for row in range(1):
+    for row in range(28):
+        # row = 5
+        # for col in range(4, 24):
+        # for col in range(1):
+        for col in range(28):
+            # col = 4
+            # posterior = np.empty(32)
+            # p_pixel = gaussian_distribution(dict_pixel[label][0], dict_pixel[label][1], dict_label[label])
+
+
+
+            # for pixel in range(32):
+            #     # p_pixel = (math.log((dict_pixel_cond[label][row*28+col][pixel]+10e-7) /
+            #     #                     (dict_pixel[row*28+col][pixel] + 10e-7)))
+            #     p_pixel = gaussian_distribution(dict_pixel[label][0], dict_pixel[label][1], dict_label[label])
+            #     # p_pixel = (math.log((dict_pixel_cond[label][row * 28 + col][pixel] + 1) / dict_label[label]))
+            #     # print("cond:", (dict_pixel_cond[label][row * 28 + col][pixel] + 1))
+            #     # print("all:", (dict_pixel[row*28+col][pixel] + 10e-7))
+            #     # print("all:", p_label)
+            #     # print("log:", p_pixel)
+            #     # p_pixel = (math.log((dict_pixel_cond[label][row * 28 + col][pixel] + 10e-7) / (1/32)))
+            #     # print((dict_pixel_cond[label][row*28+col][pixel]+10e-7) / (dict_pixel[row*28+col][pixel] + 10e-7))
+            #     # p_pixel += math.log(dict_pixel[row*28+col][pixel] + 10e-7)
+            #     # p_pixel += math.log(dict_pixel[row*28+col][pixel] + 10e-7)
+            #     p_pixel += math.log(p_label)
+            #     # print("log 1/32", math.log(1/32))
+            #     print("log p_label", math.log(1 / 32))
+            #     posterior[pixel] = p_pixel
+
+
+            #
+            # posterior /= (np.sum(posterior))
+            # # print(row, col)
+            # # print(np.argmin(posterior))
+            # print(posterior)
+            # test_imagination[row][col] = np.argmin(posterior)
+            if dict_pixel_cond[label][row*28+col][0] > 127:
+                imagination[row][col] = 1
+    # print(test_imagination)
+    plt.imshow(imagination, 'Greys')
+    plt.show()
 
 
 def label_prediction_discrete(img_array, labels, dict_pixel, dict_label, dict_pixel_cond):
@@ -527,22 +572,31 @@ train_image_conti, train_image_discrete, test_image_conti, test_image_discrete, 
 #     pkl.dump(dict_pixel_cond, f)
 # with open('all_conti.pkl', 'wb') as f:
 #     pkl.dump(all, f)
-
+# print(np.mean(train_image_conti[0]), np.std(train_image_conti[0]))
 with open('dict_pixel_conti.pkl', 'rb') as f:
     dict_pixel = pkl.load(f)
-with open('dict_label_conti.pkl', 'rb') as f:
+with open('dict_label.pkl', 'rb') as f:
     dict_label = pkl.load(f)
 with open('dict_pixel_cond_conti.pkl', 'rb') as f:
     dict_pixel_cond = pkl.load(f)
 with open('all_conti.pkl', 'rb') as f:
     all = pkl.load(f)
 
+dict_label = dict_label.item()
+# print(dict_pixel_cond)
+# print(dict_pixel_cond[0])
 # print(dict_pixel_cond[0])
 # print(dict_pixel)
 # print(dict_label)
 
-label_prediction_continuous(test_image_conti[0], test_label, dict_pixel, dict_label, dict_pixel_cond, all)
+# print(train_image_conti[0])
+# print(dict_pixel_cond)
+# label_prediction_continuous(test_image_conti, test_label, dict_pixel, dict_label, dict_pixel_cond, all)
+pixel_prediction_continuous(dict_pixel, dict_label, dict_pixel_cond, all)
+# print(gaussian_distribution(0, 1, 0))
 
+# y = scipy.stats.norm.pdf(0,0,1)
+# print(y)
 # dict_pixel, dict_label, dict_pixel_cond = compute_continuous_probability(train_image_conti, train_label)
 
 #
