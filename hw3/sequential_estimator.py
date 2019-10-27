@@ -27,6 +27,7 @@ new_var = 0
 output_result(datapoint, new_mean, new_var)
 
 i = 1
+
 while(True):
     datapoint = generator_gaussian(m, s)
 
