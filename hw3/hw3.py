@@ -140,13 +140,12 @@ def draw_ground_truth(n, w):
         mean = np.matmul(A, w.reshape(n, 1))[0][0]
         var = multivariate_gaussian(np.array([0, 0]), np.array([[1, 0], [0, 1]]), n, np.array([i, i]))
         mean_arr.append(mean)
-        var_top.append(mean+var/2)
-        var_bot.append(mean-var/2)
+        var_top.append(mean+var)
+        var_bot.append(mean-var)
 
     plt.plot(x, mean_arr, color="black")
     plt.plot(x, var_top, color="red")
     plt.plot(x, var_bot, color="red")
-    plt.ylim(-15, 15)
 
 
 def compute_predictive_distribution(A, a, poster_mean, new_var):
@@ -192,13 +191,13 @@ def draw_mean_var(poster_mean, new_cov, a):
         mean = predict_mean[0][0]
         var = predict_var[0][0]
         mean_arr.append(mean)
-        var_top.append(mean + var / 2)
-        var_bot.append(mean - var / 2)
+        var_top.append(mean + var)
+        var_bot.append(mean - var)
 
     plt.plot(x, mean_arr, color="black")
     plt.plot(x, var_top, color="red")
     plt.plot(x, var_bot, color="red")
-    plt.ylim(-15, 15)
+
 
 
 def draw_data_point(x, y):
@@ -216,9 +215,9 @@ def draw_data_point(x, y):
 # plt.scatter(X[:,0], X[:,1])
 # plt.show()
 b = 1
-n = 4
-a = 1
-w = np.array([1, 2, 3, 4])
+n = 3
+a = 3
+w = np.array([1, 2, 3])
 
 fig = plt.subplots(nrows=2, ncols=2)
 plt.subplot(221)
@@ -246,7 +245,9 @@ for i in range(1000):
         draw_mean_var(m, c, a)
     old_m = m
     m, c, x, y = compute_posterior(n, a, m, c)
-    if sum(abs(old_m-m)) < 4*10e-6:
+    if sum(abs(old_m-m)) < n*10e-6:
+        data_point.append(x)
+        result.append(y)
         plt.subplot(222)
         plt.title('Predictive result')
         draw_data_point(data_point, result)
@@ -255,5 +256,12 @@ for i in range(1000):
 
     data_point.append(x)
     result.append(y)
+if i == 999:
+    data_point.append(x)
+    result.append(y)
+    plt.subplot(222)
+    plt.title('Predictive result')
+    draw_data_point(data_point, result)
+    draw_mean_var(m, c, a)
 plt.show()
 print("---------------------------------------")
