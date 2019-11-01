@@ -34,13 +34,13 @@ def compute_D(matrix):
     return D
 
 
+def build_design_matrix(n, x, y):
+    one_arr = np.ones(2*n)
 
-def build_design_matrix(n, x):
-    design_matrix = np.empty((x.shape[0], n))
-    for i in range(n):
-        design_matrix[:, i] = np.power(x, i)
-    design_matrix = design_matrix.T
-    return design_matrix
+    design_matrix = np.append(one_arr, x, axis=0)
+    design_matrix = np.append(design_matrix, y, axis=0)
+
+    return design_matrix.reshape((3, -1))
 
 
 def build_random_matrix(n):
@@ -136,7 +136,7 @@ Dy = np.append(D1[:, 1], D2[:, 1], axis=0)
 Dclass = np.append(np.zeros(n), np.ones(n), axis=0)
 # print(D1[:, 0])
 # print(D2[:, 0])
-phi = build_design_matrix(3, Dx)
+phi = build_design_matrix(n, Dx, Dy)
 
 
 
@@ -146,65 +146,65 @@ phi = build_design_matrix(3, Dx)
 # print(A)
 # A1 = build_design_matrix(3, D1[:, 0])
 # A2 = build_design_matrix(3, D2[:, 0])
-
+#
 # print(A1)
-
+#
 # print("Dy", Dy.shape)
 # print("Dclass:", Dclass.shape, Dclass)
-# w
-
-# i = 0
-# for i in range(50):
-#     D = compute_D(np.matmul(w.T, phi))
-#     print(D)
-#     H = np.matmul(np.matmul(phi, D), phi.T)
-#     gradient = compute_gradient(phi, Dclass, w)
-#     # print(H)
-#     if np.linalg.det(H) == 0:
-#         w -= gradient
-#     else:
-#         w -= np.matmul(np.linalg.inv(H), gradient)
-#     print(w)
-#
-# result = np.matmul(phi.T, w)
-#
-# prediction = []
-# for i in result:
-#     prediction.append(1) if i > 1/2 else prediction.append(0)
-# print(prediction)
 
 
-## gradient descent
-# while(True):
-for i in range(1000):
+i = 0
+for i in range(50):
+    D = compute_D(np.matmul(w.T, phi))
+    print(D)
+    H = np.matmul(np.matmul(phi, D), phi.T)
     gradient = compute_gradient(phi, Dclass, w)
-    w -= gradient
+    # print(H)
+    if np.linalg.det(H) == 0:
+        w -= gradient
+    else:
+        w -= np.matmul(np.linalg.inv(H), gradient)
     print(w)
-    if abs(np.sum(gradient)) < 3*10e-2:
-        break
 
 result = np.matmul(phi.T, w)
 
 prediction = []
 for i in result:
-    prediction.append(1) if i >= 1/2 else prediction.append(0)
-
-output_confusion_matrix(Dclass, prediction)
-
-
-color_pre = convert_color(prediction)
-color_gt = convert_color(Dclass)
-# print(convert_color(prediction))
+    prediction.append(1) if i > 1/2 else prediction.append(0)
+print(prediction)
 
 
-plt.subplot(131)
-plt.title('Ground Truth')
-plt.scatter(Dx, Dy, color=color_gt)
-
-plt.subplot(132)
-plt.title('Gradient Descent')
-plt.scatter(Dx, Dy, color=color_pre)
-plt.show()
+# ## gradient descent
+# while(True):
+# # for i in range(1000):
+#     gradient = compute_gradient(phi, Dclass, w)
+#     w -= gradient
+#     print(w)
+#     if abs(np.sum(gradient)) < 3*10e-3:
+#         break
+#
+# result = np.matmul(phi.T, w)
+#
+# prediction = []
+# for i in result:
+#     prediction.append(1) if i >= 1/2 else prediction.append(0)
+#
+# output_confusion_matrix(Dclass, prediction)
+#
+#
+# color_pre = convert_color(prediction)
+# color_gt = convert_color(Dclass)
+# # print(convert_color(prediction))
+#
+#
+# plt.subplot(131)
+# plt.title('Ground Truth')
+# plt.scatter(Dx, Dy, color=color_gt)
+#
+# plt.subplot(132)
+# plt.title('Gradient Descent')
+# plt.scatter(Dx, Dy, color=color_pre)
+# plt.show()
 
 
 
