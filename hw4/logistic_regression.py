@@ -205,15 +205,17 @@ def draw_result(gt, gd, nt):
     plt.subplot(132)
     plt.title('Gradient Descent')
     plt.scatter(Dx, Dy, color=color_gd)
-    plt.show()
 
     plt.subplot(133)
     plt.title('Newton\'s method')
     plt.scatter(Dx, Dy, color=color_nt)
 
+    plt.show()
+
 
 if __name__ == "__main__":
     n, Dx, Dy, Dclass, phi = initial_parameter()
     prediction_nt = newton(phi, Dclass)
+    print('----------------------------------------')
     prediction_gd = gradient_descent(phi, Dclass)
     draw_result(Dclass, prediction_gd, prediction_nt)
