@@ -44,47 +44,35 @@ def read_label(filename):
 def get_filename():
     filename_train_image = '/Users/yen/Downloads/train-images.idx3-ubyte'
     filename_train_label = '/Users/yen/Downloads/train-labels.idx1-ubyte'
-    filename_test_image = '/Users/yen/Downloads/t10k-images.idx3-ubyte'
-    filename_test_label = '/Users/yen/Downloads/t10k-labels.idx1-ubyte'
-    return filename_train_image, filename_train_label, filename_test_image, filename_test_label
+    return filename_train_image, filename_train_label
 
 
 def load_data():
-    filename_train_image, filename_train_label, filename_test_image, filename_test_label = get_filename()
+    filename_train_image, filename_train_label = get_filename()
     train_image = read_image(filename_train_image)
-    test_image = read_image(filename_test_image)
     train_label = read_label(filename_train_label)
-    test_label = read_label(filename_test_label)
 
-    return train_image, test_image, train_label, test_label
+    return train_image, train_label
 
 
 def save_pkl_data():
-    filename_train_image, filename_train_label, filename_test_image, filename_test_label = get_filename()
+    filename_train_image, filename_train_label = get_filename()
     img = read_image(filename_train_image)
     with open('train_image.pkl', 'wb') as f:
         pkl.dump(img, f)
-    img = read_image(filename_test_image)
-    with open('test_image.pkl', 'wb') as f:
-        pkl.dump(img, f)
     with open('train_label.pkl', 'wb') as f:
         pkl.dump(read_label(filename_train_label), f)
-    with open('test_label.pkl', 'wb') as f:
-        pkl.dump(read_label(filename_test_label), f)
 
 
 def load_pkl_data():
     with open('train_image.pkl', 'rb') as f:
         train_image = pkl.load(f)
-    with open('test_image.pkl', 'rb') as f:
-        test_image = pkl.load(f)
     with open('train_label.pkl', 'rb') as f:
         train_label = pkl.load(f)
-    with open('test_label.pkl', 'rb') as f:
-        test_label = pkl.load(f)
-    return train_image, test_image, train_label, test_label
+
+    return train_image, train_label
 
 
-train_image, test_image, train_label, test_label = load_pkl_data()
+train_image, train_label = load_pkl_data()
 
 
