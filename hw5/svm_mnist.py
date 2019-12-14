@@ -19,6 +19,11 @@ def convert_format(data):
     return x
 
 
+def convert_kernel_format(data):
+    kernel = np.hstack((np.arange(1, len(data) + 1).reshape(-1, 1), data))
+    return kernel
+
+
 def line_kernel(x):
     return np.matmul(x, x.T)
 
@@ -95,21 +100,31 @@ def grid_search(prob, type, c, g = [], r = [], d = []):
 
         return best_para
 
-    elif type == 4:
-        option = '-q -t 4 -v 10 '
-        acc = np.array([])
-        f_self = open('self_op.csv', 'w')
-        f_self.write('c_op,-c,acc\n')
+
+def grid_search_self(data, c, g):
+    option = '-q -t 4 -v 10 '
+    acc = np.array([])
+    f_self = open('self_op.csv', 'w')
+    f_self.write('c_op,-c,acc\n')
+    for j in g:
+        x_train_kernel = line_kernel(data) + rbf_kernel(data, j)
+        x_train_self = convert_kernel_format(x_train_kernel)
+        prob_kernel = svmutil.svm_problem(y_train, x_train_self, isKernel=True)
         for i in c:
             para = option + '-c ' + str(2 ** i)
-            model = svmutil.svm_train(prob, para)
+            model = svmutil.svm_train(prob_kernel, para)
             acc = np.append(acc, model)
             f_self.write(str(i) + ',' + str(2 ** i) + ',' + str(model) + '\n')
-        print(acc)
-        print(c[np.argmax(acc)])
-        best_para = ' -c ' + str(2 ** c[np.argmax(acc)])
 
-        return best_para
+    acc = acc.reshape((len(c), len(g)))
+    idx = np.unravel_index(np.argmax(acc), acc.shape)
+
+    print(acc)
+    print(idx)
+
+    best_para = ' -c ' + str(2**c[idx[0]])
+    best_g = g[idx[1]]
+    return best_para, best_g
 
 
 
@@ -122,29 +137,80 @@ def grid_search(prob, type, c, g = [], r = [], d = []):
 # a = line_kernel(x_train_origin)
 # print(a)
 # print(a.shape)
-"""
+
 y_train = list(y_train)
 y_test = list(y_test)
 
-x_train_kernel = line_kernel(x_train_origin) + rbf_kernel(x_train_origin, 1/28)
+# best_para_self = grid_search(prob_kernel, 0, [-9, -7, -5, -1, 1, 5, 8, 10, 15])
+
+# x_train_kernel = line_kernel(x_train_origin) + rbf_kernel(x_train_origin, 1/28)
+# x_train_self = convert_kernel_format(x_train_kernel)
+
+# print('train kernel',x_train_kernel.shape)
+# print('train kernel',len(x_train_kernel))
+# print('self', x_train_self.shape)
+# print('self len', len(x_train_self.shape))
+
+
+# best_para_self, best_gamma_self = grid_search_self(x_train_origin , [-7, -5, 1, 5, 10, 15], [1/1024, 1/784, 1/28, 1, 3])
+
+print("!!!")
+
+best_para_self = ' -c 0.0078125'
+best_gamma_self = 0.0012755
+# best_gamma_self = 0.0012755102040816326
+print(best_para_self, best_gamma_self)
+
+# x_train_kernel = line_kernel(x_train_origin) + rbf_kernel(x_train_origin, best_gamma_self)
+# x_train_self = convert_kernel_format(x_train_kernel)
+#
+#
+#
+#
+x_train_kernel = line_kernel(x_train_origin) + rbf_kernel(x_train_origin, best_gamma_self)
+x_train_self = convert_kernel_format(x_train_kernel)
+# prob_kernel = svmutil.svm_problem(y_train, x_train_self, isKernel=True)
+#
+# model = svmutil.svm_train(prob_kernel, '-t 4 '+best_para_self)
+# svmutil.svm_save_model("model_self", model)
+model = svmutil.svm_load_model("model_self")
+print("here1")
+x_test_kernel = line_kernel(x_test_origin) + rbf_kernel(x_test_origin, best_gamma_self)
+print("here2")
+x_test_self = convert_kernel_format(x_test_kernel)
+print(x_test_self)
+print(y_test)
+print("x_train", x_train_self)
+print(model)
+print("here3")
+p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test_self, model)
+
+# p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test_self, model)
+
+
+"""
 x_test_kernel = line_kernel(x_test_origin) + rbf_kernel(x_test_origin, 1/28)
+
 # print(x_train_kernel)
 # print(x_train_kernel.shape)
-x_train_self = convert_format(x_train_kernel)
-x_test_self = convert_format(x_test_kernel)
+x_train_self = convert_kernel_format(x_train_kernel)
+x_test_self = convert_kernel_format(x_test_kernel)
+
+# print(x_train_self.shape)
 
 prob_kernel = svmutil.svm_problem(y_train, x_train_self, isKernel=True)
 # best_para_self = grid_search(prob_kernel, 0, [-9, -7, -5, -1, 1, 5, 8, 10, 15])
-best_para_self = grid_search(prob_kernel, 4, [-7, 1, 5])
+# best_para_self = grid_search(prob_kernel, 4, [-7, 1, 5])
 # best_para_self = ' -c 0.03125'
-print(best_para_self)
 
 
 # model = svmutil.svm_train(prob_kernel, best_para_self)
 # p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test_self, model)
+
 """
+# ##############################################
 
-
+"""
 
 # save_pkl_data(convert_format(x_train))
 # x_train = load_pkl_data()
@@ -165,20 +231,27 @@ start = timeit.default_timer()
 # # best_para_linear = grid_search(prob, 0, [-9, -7, -5, -1, 1, 5, 8, 10, 15])
 # # best_para_linear = ' -c 0.03125'
 
+
+# best_para_poly = grid_search(prob, 1, [-7, 1, 10], [1/784, 1/28, 1], [-10, 1, 10], [2, 3, 4])
+best_para_poly = ' -c 2 -g 1 -r 10 -d 2'
+
+# best_para_poly = grid_search(prob, 1, [-7, 1, 10], [1/784, 1, 10], [1, 10], [2, 3, 4])
+
+
 # best_para_rbf = grid_search(prob, 2, [-7, -5, 1, 5, 10, 15], [1/1024, 1/784, 1/28, 1, 3])
 # best_para_rbf = grid_search(prob, 2, [-7, 1, 10], [1/784, 1/28, 1, 10])
 # # best_para_rbf = ' -c 32768 -g 0.03571428571428571'
 
 # best_para = grid_search(prob, 0, [-5,-1,7])
 
-best_para_poly = grid_search(prob, 1, [-7, 1, 10], [1/784, 1/28, 1], [-10, 1, 10], [2, 3, 4])
-
-# best_para_poly = grid_search(prob, 1, [-7, 1, 10], [1/784, 1, 10], [1, 10], [2, 3, 4])
 
 
 # model = svmutil.svm_train(prob, '-q -t 0 '+best_para_linear)
 # p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test, model)
 #
+# model = svmutil.svm_train(prob, '-q -t 1 '+best_para_poly)
+# p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test, model)
+
 # model = svmutil.svm_train(prob, '-q -t 2 '+best_para_rbf)
 # p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test, model)
 
@@ -218,3 +291,6 @@ print('Time: ', stop - start)
 # xt = [{1:1, 2:1}]
 # p_label, p_acc, p_val = svmutil.svm_predict(yt, xt, model)
 # print(p_label)
+
+
+"""
