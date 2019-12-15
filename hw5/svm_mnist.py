@@ -115,7 +115,7 @@ def grid_search_self(data, c, g):
             para = option + '-c ' + str(2 ** i)
             model = svmutil.svm_train(prob_kernel, para)
             acc = np.append(acc, model)
-            f_self.write(str(i) + ',' + str(2 ** i) + ',' + str(model) + '\n')
+            f_self.write(str(i) + ',' + str(2 ** i) + ',' + str(j) + ',' + str(model) + '\n')
 
     acc = acc.reshape((len(c), len(g)))
     idx = np.unravel_index(np.argmax(acc), acc.shape)
@@ -128,6 +128,10 @@ def grid_search_self(data, c, g):
 if __name__ == "__main__":
     x_train_origin, y_train, x_test_origin, y_test = load_data()
     x_test = convert_format(x_test_origin)
+
+    x = convert_format(x_train_origin)
+    prob = svmutil.svm_problem(y_train, x)
+    self, gamma_self = grid_search_self(x_train_origin, [-7, -5, 1, 5, 10, 15], [1 / 1024, 1 / 784, 1 / 28, 1, 3])
 
     # find the best parameters by grid search
     bp_linear, bp_poly, bp_rbf, bp_self, bp_gamma_self, prob = find_best_parameter(x_train_origin, y_train)
@@ -148,5 +152,4 @@ if __name__ == "__main__":
     prob_kernel = svmutil.svm_problem(y_train, x_train_self, isKernel=True)
     model = svmutil.svm_train(prob_kernel, '-t 4 '+bp_self)
     p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test_self, model)
-
 
