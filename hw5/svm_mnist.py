@@ -8,8 +8,6 @@ def load_data():
     y_train = np.genfromtxt('Y_train.csv', delimiter=',')
     x_test_origin = np.genfromtxt('X_test.csv', delimiter=',')
     y_test = np.genfromtxt('Y_test.csv', delimiter=',')
-    y_train = list(y_train)
-    y_test = list(y_test)
     return x_train_origin, y_train, x_test_origin, y_test
 
 
@@ -30,7 +28,7 @@ def convert_format(data):
 
 
 def convert_kernel_format(data):
-    kernel = np.hstack((np.arange(1, len(data) + 1).reshape(-1, 1), data))
+    kernel = np.array([np.append(i+1, data[:,i]) for i in range(data.shape[0])])
     return kernel
 
 
@@ -150,3 +148,5 @@ if __name__ == "__main__":
     prob_kernel = svmutil.svm_problem(y_train, x_train_self, isKernel=True)
     model = svmutil.svm_train(prob_kernel, '-t 4 '+bp_self)
     p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test_self, model)
+
+
