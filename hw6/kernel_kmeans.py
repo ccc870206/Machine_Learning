@@ -3,13 +3,10 @@ import cv2
 from scipy.spatial.distance import pdist, squareform
 import math
 import numba as nb
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import timeit
 import matplotlib.image as mpimg
-#import matplotlib
-#matplotlib.use('Agg')
+
 
 def initial(n_x, n_cluster):
     c = np.zeros((n_x, n_cluster), dtype=int)
@@ -42,7 +39,7 @@ def intra_cluster_distance(x, c, size):
         for i in c_list:
             for k in c_list:
                 # print(kernel((i // size, i % size), (k // size, k % size), x[i], x[k], 0.01, 0.01))
-                total[j] += (kernel((i // n_x, i % n_x), (k // n_x, k % n_x), x[i], x[k], 0.01, 0.01)/c_sum/c_sum)
+                total[j] += (kernel((i // n_x, i % n_x), (k // n_x, k % n_x), x[i], x[k], 0.01, 0.1)/c_sum/c_sum)
                 # print(total[j])
     # print(total)
     return total
@@ -85,74 +82,63 @@ def compute_distance(xi, si, x, c, size):
     #     kernel()
 
     # return
-start_first = timeit.default_timer()
+start = timeit.default_timer()
 
 
 
 np.set_printoptions(threshold=np.inf)
 # img = cv2.imread('image2.png')
 
-image_list = ['image1', 'image2']
+img=mpimg.imread('image2.png')
 
-for image in image_list:
-
-    start = timeit.default_timer()
-    image_name = image
-    img=mpimg.imread(image_name+'.png')
-    img=img[:10,:10]
-    #imgplot = plt.imshow(img)
-    img*=255
-    #plt.show()
-
-    x = img.reshape(-1, 3)
-    n_size = img.shape[0]
-    points = np.array([[i, j] for i in range(n_size) for j in range(n_size)])
-
-    n_x = x.shape[0]
+imgplot = plt.imshow(img)
+img*=255
+plt.show()
 
 
-    # n_cluster = 4
-    cluster_list = [2,3,4]
-    for n_cluster in cluster_list:
-        c = initial(n_x, n_cluster)
+img = img[:20, :20]
 
-        for times in range(2):
-            fix_term = intra_cluster_distance(x, c, n_size)
-            for i in range(n_x):
-                distance = compute_distance(x[i], (i//size,i%size), x, c, n_size) + fix_term
-                # print(distance)
-                c[i, :] = 0
-                c[i, np.argmin(distance)] = 1
-                # print(c[i])
+x = img.reshape(-1, 3)
+n_size = img.shape[0]
+points = np.array([[i, j] for i in range(n_size) for j in range(n_size)])
 
+n_x = x.shape[0]
+n_cluster = 2
 
-            color_arr = np.array([""]*n_x)
-            # print(color_arr.shape)
-            for i in range(n_x):
-                if np.argmax(c[i]) == 0:
-                    color_arr[i] = 'red'
-                elif np.argmax(c[i]) == 1:
-                    color_arr[i] = 'blue'
-                elif np.argmax(c[i]) == 2:
-                    color_arr[i] = 'green'
-                else:
-                    color_arr[i] = 'yellow'
+c = initial(n_x, n_cluster)
 
-            plt.scatter(points[:, 0], points[:, 1], color=color_arr, alpha=0.3)
-            plt.savefig('./'+image_name+'_'+str(n_cluster)+'/'+image_name+'_'+str(n_cluster)+'_'+str(times)+'.png')
-            plt.clf()
-            #plt.show()
+for times in range(10):
+    fix_term = intra_cluster_distance(x, c, n_size)
+    for i in range(n_x):
+        distance = compute_distance(x[i], (i//n_size, i%n_size), x, c, n_size) + fix_term
+        # print(distance)
+        c[i, :] = 0
+        c[i, np.argmin(distance)] = 1
+        # print(c[i])
 
 
-        # third_term =
-        # print(intra_cluster_distance(x, c, n_size))
+    color_arr = np.array([""]*n_x)
+    # print(color_arr.shape)
+    for i in range(n_x):
+        if np.argmax(c[i]) == 0:
+            color_arr[i] = 'red'
+        elif np.argmax(c[i]) == 1:
+            color_arr[i] = 'blue'
+        elif np.argmax(c[i]) == 2:
+            color_arr[i] = 'green'
+        else:
+            color_arr[i] = 'yellow'
+
+    plt.scatter(points[:, 0], points[:, 1], color=color_arr, alpha=0.3)
+    plt.savefig('/Users/yen/Work/ml_hw6_pic/'+'image2_'+str(times)+'.png')
+    plt.show()
 
 
+# third_term =
+# print(intra_cluster_distance(x, c, n_size))
 
-            stop = timeit.default_timer()
-            print(image_name+'_'+str(n_cluster))
-            print('Time: ', stop - start)
+
 
 stop = timeit.default_timer()
 
-print('Total Time: ', stop - start_first)
+print('Time: ', stop - start)
