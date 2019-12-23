@@ -12,7 +12,7 @@ def initial(n_x, n_cluster):
     c = np.zeros((n_x, n_cluster), dtype=int)
     for i in range(n_x):
         c[i][np.random.randint(0, n_cluster)] = 1
-    print("c", c)
+    # print("c", c)
     return c
 
 
@@ -103,14 +103,14 @@ n_size = img.shape[0]
 points = np.array([[i, j] for i in range(n_size) for j in range(n_size)])
 
 n_x = x.shape[0]
-n_cluster = 4
+n_cluster = 2
 
 c = initial(n_x, n_cluster)
 
 for times in range(10):
     fix_term = intra_cluster_distance(x, c, n_size)
     for i in range(n_x):
-        distance = compute_distance(x[i], (0, 0), x, c, n_size) + fix_term
+        distance = compute_distance(x[i], (i//n_size, i%n_size), x, c, n_size) + fix_term
         # print(distance)
         c[i, :] = 0
         c[i, np.argmin(distance)] = 1
