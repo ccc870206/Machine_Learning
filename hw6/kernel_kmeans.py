@@ -5,13 +5,42 @@ import numba as nb
 import matplotlib.pyplot as plt
 import timeit
 import matplotlib.image as mpimg
+from scipy import ndimage
 
 
-def initial(n_x, n_cluster):
+def initial_random(n_x, n_cluster):
     c = np.zeros((n_x, n_cluster), dtype=int)
     for i in range(n_x):
         c[i][np.random.randint(0, n_cluster)] = 1
     # print("c", c)
+    return c
+
+
+def initial_far(n_x, size):
+    c = np.zeros((n_x, n_cluster), dtype=int)
+    # for i in range(n_x):
+    #     if i//size > i%size and  i%size > (-i//size+size):
+    #         c[i][0] = 1
+    #     elif i//size > i%size:
+    #         c[i][1] = 1
+    #     elif i // size < i % size and i%size > (-i//size+size):
+    #         c[i][2] = 1
+    #     else:
+    #         c[i][3] = 1
+
+    # cluster 2
+    # for i in range(n_x):
+    #     if i//size > i%size:
+    #         c[i][0] = 1
+    #     elif i//size:
+    #         c[i][1] = 1
+
+    for i in range(n_x):
+        if i%size > (-i//size+size):
+            c[i][0] = 1
+        elif i//size:
+            c[i][1] = 1
+
     return c
 
 
@@ -30,6 +59,7 @@ def matrix_kernel(s1, s2, x1, x2, gamma_s, gamma_c):
     # s1 = np.array(s1)
     # s2 = np.array(s2)
     coord = -gamma_s * np.sum(np.power(s2-s1, 2), axis=1)
+    # print(np.power(s2-s1, 2))
     color = -gamma_c * np.sum(np.power(x2-x1, 2), axis=1)
     total = coord+color
     # print((math.e**total).shape)
@@ -60,29 +90,15 @@ def intra_cluster_distance(x, c, size):
     n_c = c.shape[1]
 
     total = np.zeros(n_c)
-    # for j in range(n_c):
-    #     c_list = np.where(c[:, j] == 1)[0]
-    #     c_sum = c[:, j].sum()
-    #     for i in c_list:
-    #         for k in c_list:
-    #             # print(kernel((i // size, i % size), (k // size, k % size), x[i], x[k], 0.01, 0.01))
-    #             total[j] += (kernel((i // size, i % size), (k // size, k % size), x[i], x[k], 0.01, 0.1)/c_sum/c_sum)
-    #             # print(total[j])
-    # print(total)
+
     for j in range(n_c):
         c_list = np.where(c[:, j] == 1)[0]
         x_in_c = x[c_list]
         p_in_c = points[c_list]
         c_sum = c[:, j].sum()
         # print(p_in_c)
-        total[j] = (similarity_matrix(x_in_c, p_in_c, 0.01, 0.1).sum()+len(c_list))/c_sum/c_sum
+        total[j] = (similarity_matrix(x_in_c, p_in_c, gamma_s, gamma_c).sum()+len(c_list))/c_sum/c_sum
 
-        # for i in c_list:
-        #     for k in c_list:
-        #         # print(kernel((i // size, i % size), (k // size, k % size), x[i], x[k], 0.01, 0.01))
-        #         total[j] += (kernel((i // size, i % size), (k // size, k % size), x[i], x[k], 0.01, 0.1)/c_sum/c_sum)
-        #         # print(total[j])
-    # print(total)
     return total
 
 # @nb.jit()
@@ -120,40 +136,14 @@ def compute_distance(xi, si, x, c, size):
         c_in_x = x[c_list]
         p_in_x = points[c_list]
 
-        second_term = (matrix_kernel(np.array(si), p_in_x, xi, c_in_x, 0.01, 0.1).sum()+1)
+        second_term = (matrix_kernel(np.array(si), p_in_x, xi, c_in_x, gamma_s, gamma_c).sum()+1)
         # for i in np.where(c[:, j] == 1)[0]:
         #     second_term += kernel(si, (i//size,i%size), xi, x[i], 0.001, 1)
         #     # print(second_term.sum())
         second_term = -2*second_term/sum_c
         distance[j] += second_term
-    print("modify", distance)
+    # print("modify", distance)
 
-    # distance = np.ones(n_c)
-    # for j in range(n_c):
-    #     second_term = 0
-    #     sum_c = c[:, j].sum()
-    #
-    #     c_list = np.where(c[:, j] == 1)[0]
-    #     c_in_x = np.concatenate((xi.reshape(1, -1), x[c_list]))
-    #     p_in_x = np.concatenate((np.array(si).reshape(1, -1), points[c_list]))
-    #
-    #     second_term += ((similarity_matrix(c_in_x, p_in_x, 0.01, 0.1)[0]/sum_c).sum()+1/sum_c)
-    #     distance[j] += second_term
-    # print(distance)
-        # for i in np.where(c[:, j] == 1)[0]:
-        #     second_term += kernel(si, (i // size, i % size), xi, x[i], 0.01, 0.1)
-        #     # print(second_term.sum())
-        #     second_term = -2 * second_term / sum_c
-        #     distance[j] += second_term
-
-
-    # for j in range(n_c):
-    #     third_term = [kernel((i//n_x,i%n_x), (k//size,k%size), x[i], x[k], 0.01, 0.01) \
-    #                   for i in np.where(c[:, j] == 1)[0] for k in np.where(c[:, j] == 1)[0]]
-    #     print(third_term)
-    # # for i in
-    # # print(second_term.shape)
-    # print(distance)
     return distance
 
 
@@ -164,12 +154,39 @@ def compute_distance(xi, si, x, c, size):
 start = timeit.default_timer()
 
 
+def draw_result(n_x, c, filename, times):
+    color_arr = np.array([""] * n_x)
+    # print(color_arr.shape)
+    for i in range(n_x):
+        if np.argmax(c[i]) == 0:
+            color_arr[i] = 'red'
+        elif np.argmax(c[i]) == 1:
+            color_arr[i] = 'blue'
+        elif np.argmax(c[i]) == 2:
+            color_arr[i] = 'green'
+        elif np.argmax(c[i]) == 3:
+            color_arr[i] = 'yellow'
 
+        # elif np.argmax(c[i]) == 4:
+        #     color_arr[i] = 'cyan'
+        # elif np.argmax(c[i]) == 5:
+        #     color_arr[i] = 'white'
+        # elif np.argmax(c[i]) == 6:
+        #     color_arr[i] = 'magenta'
+
+
+    plt.scatter(points[:, 0], points[:, 1], color=color_arr, alpha=0.3, s=5)
+    # plt.savefig('/Users/yen/Work/ml_hw6_pic/'+filename+'_'+str(times)+'.png')
+    plt.show()
+
+
+gamma_s = 0.0005
+gamma_c = 0.0005
 np.set_printoptions(threshold=np.inf)
 # img = cv2.imread('image2.png')
-
-img=mpimg.imread('image2.png')
-
+filename = 'image2'
+img=mpimg.imread(filename+'.png')
+# img = ndimage.rotate(img,90)
 imgplot = plt.imshow(img)
 img*=255
 plt.show()
@@ -182,11 +199,15 @@ n_size = img.shape[0]
 points = np.array([[i, j] for i in range(n_size) for j in range(n_size)])
 
 n_x = x.shape[0]
-n_cluster = 4
+n_cluster = 2
 
-c = initial(n_x, n_cluster)
+c = initial_random(n_x, n_cluster)
+# c = initial_far(n_x, n_size)
 
-for times in range(2):
+draw_result(n_x, c, filename, 'default')
+
+
+for times in range(10):
     fix_term = intra_cluster_distance(x, c, n_size)
     for i in range(n_x):
         # i = n_x -1
@@ -197,21 +218,8 @@ for times in range(2):
         # print(c[i])
 
 
-    color_arr = np.array([""]*n_x)
-    # print(color_arr.shape)
-    for i in range(n_x):
-        if np.argmax(c[i]) == 0:
-            color_arr[i] = 'red'
-        elif np.argmax(c[i]) == 1:
-            color_arr[i] = 'blue'
-        elif np.argmax(c[i]) == 2:
-            color_arr[i] = 'green'
-        else:
-            color_arr[i] = 'yellow'
+    draw_result(n_x, c, filename, times)
 
-    plt.scatter(points[:, 0], points[:, 1], color=color_arr, alpha=0.3, s=5)
-    # plt.savefig('/Users/yen/Work/ml_hw6_pic/'+'image2_'+str(times)+'.png')
-    plt.show()
 
 
 # third_term =
