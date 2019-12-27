@@ -29,62 +29,37 @@ def initial_far(n_x, size):
     #         c[i][3] = 1
 
     # cluster 2
-    # for i in range(n_x):
-    #     if i//size > i%size:
-    #         c[i][0] = 1
-    #     elif i//size:
-    #         c[i][1] = 1
-
     for i in range(n_x):
-        if i%size > (-i//size+size):
+        if i//size > i%size:
             c[i][0] = 1
         elif i//size:
             c[i][1] = 1
 
+    # for i in range(n_x):
+    #     if i%size > (-i//size+size):
+    #         c[i][0] = 1
+    #     elif i//size:
+    #         c[i][1] = 1
+
     return c
 
 
-# @nb.jit()
 def kernel(s1, s2, x1, x2, gamma_s, gamma_c):
-    s1 = np.array(s1)
-    s2 = np.array(s2)
-    coord = -gamma_s * np.sum(np.power(s1-s2, 2))
-    color = -gamma_c * np.sum(np.power(x1-x2, 2))
-    total = coord+color
-
-    return math.e**total
-
-
-def matrix_kernel(s1, s2, x1, x2, gamma_s, gamma_c):
-    # s1 = np.array(s1)
-    # s2 = np.array(s2)
     coord = -gamma_s * np.sum(np.power(s2-s1, 2), axis=1)
-    # print(np.power(s2-s1, 2))
     color = -gamma_c * np.sum(np.power(x2-x1, 2), axis=1)
     total = coord+color
-    # print((math.e**total).shape)
+
     return math.e**total
 
 
 def similarity_matrix(x, position, gamma_s, gamma_c):
-    # print("begin")
-    # coord = np.array([[i, j] for i in range(x.shape[0]) for j in range(x.shape[1])])
-    # print("end")
     d_coord = -gamma_s * pdist(position, 'sqeuclidean')
-    # print(squareform(d_coord))
-    # print(coord)
-    # print(coord.shape)
-    # print(squareform(pdist(coord, 'sqeuclidean')))
     color = x.reshape(-1, 3)
     d_color = -gamma_c * pdist(color, 'sqeuclidean')
-    # print(squareform(d_color))
     d_total = d_coord + d_color
-    # print(d_total)
-    # print("np exp",np.exp(d_total))
     return squareform(np.exp(d_total))
 
 
-# @nb.jit()
 def intra_cluster_distance(x, c, size):
     n_x = c.shape[0]
     n_c = c.shape[1]
@@ -101,60 +76,30 @@ def intra_cluster_distance(x, c, size):
 
     return total
 
-# @nb.jit()
-def compute_distance(xi, si, x, c, size):
+
+def compute_distance(xi, si, x, c):
     n_c = c.shape[1]
-
     distance = np.ones(n_c)
-    # first_term = kernel(si, si, xi, xi, 0.01, 0.01)
-    # distance += first_term
-    # print(distance)
-    # kernel(si, (0 // n_x, 0 % n_x), xi, x[0], 0.01, 0.01)
-
-    # for j in range(n_c):
-    #     second_term = np.array([kernel(si, (i//size,i%size), xi, x[i], 0.01, 0.1) for i in np.where(c[:, j] == 1)[0]])
-    #     # print(second_term.sum())
-    #     second_term = -2*second_term.sum()/c[:, j].sum()
-    #     distance[j] += second_term
-
-    # for j in range(n_c):
-    #     second_term = 0
-    #     sum_c = c[:, j].sum()
-    #
-    #     for i in np.where(c[:, j] == 1)[0]:
-    #         second_term = kernel(si, (i//size,i%size), xi, x[i], 0.01, 0.1)
-    #         # print(second_term.sum())
-    #         second_term = -2*second_term/sum_c
-    #         distance[j] += second_term
-    # print("origin", distance)
 
     for j in range(n_c):
-        second_term = 0
         sum_c = c[:, j].sum()
         c_list = np.where(c[:, j] == 1)[0]
-        # print("cluster", c_list.shape)
+
         c_in_x = x[c_list]
         p_in_x = points[c_list]
 
-        second_term = (matrix_kernel(np.array(si), p_in_x, xi, c_in_x, gamma_s, gamma_c).sum()+1)
-        # for i in np.where(c[:, j] == 1)[0]:
-        #     second_term += kernel(si, (i//size,i%size), xi, x[i], 0.001, 1)
-        #     # print(second_term.sum())
+        second_term = (kernel(np.array(si), p_in_x, xi, c_in_x, gamma_s, gamma_c).sum()+1)
         second_term = -2*second_term/sum_c
         distance[j] += second_term
-    # print("modify", distance)
 
     return distance
 
 
-    # for i in range(xi):
-    #     kernel()
 
-    # return
-start = timeit.default_timer()
 
 
 def draw_result(n_x, c, filename, times):
+    plt.figure(num=None, figsize=(6.4, 6.4))
     color_arr = np.array([""] * n_x)
     # print(color_arr.shape)
     for i in range(n_x):
@@ -167,66 +112,53 @@ def draw_result(n_x, c, filename, times):
         elif np.argmax(c[i]) == 3:
             color_arr[i] = 'yellow'
 
-        # elif np.argmax(c[i]) == 4:
-        #     color_arr[i] = 'cyan'
-        # elif np.argmax(c[i]) == 5:
-        #     color_arr[i] = 'white'
-        # elif np.argmax(c[i]) == 6:
-        #     color_arr[i] = 'magenta'
+    plt.gca().invert_yaxis()
 
-
-    plt.scatter(points[:, 0], points[:, 1], color=color_arr, alpha=0.3, s=5)
+    plt.scatter(points[:, 1], points[:, 0], color=color_arr, alpha=0.3, s=5)
     # plt.savefig('/Users/yen/Work/ml_hw6_pic/'+filename+'_'+str(times)+'.png')
     plt.show()
+    plt.close()
 
 
-gamma_s = 0.0005
-gamma_c = 0.0005
-np.set_printoptions(threshold=np.inf)
-# img = cv2.imread('image2.png')
-filename = 'image2'
-img=mpimg.imread(filename+'.png')
-# img = ndimage.rotate(img,90)
-imgplot = plt.imshow(img)
-img*=255
-plt.show()
+gamma_s = 0.0001
+gamma_c = 0.0001
 
+image_list = ['image2']
+start = timeit.default_timer()
+for image in image_list:
+    image_name = image
+    img = mpimg.imread(image_name + '.png')
 
-# img = img[:20, :20]
+    # # show original picture
+    # imgplot = plt.imshow(img)
+    # plt.show()
+    img *= 255
 
-x = img.reshape(-1, 3)
-n_size = img.shape[0]
-points = np.array([[i, j] for i in range(n_size) for j in range(n_size)])
+    x = img.reshape(-1, 3)
+    n_x = x.shape[0]
+    n_size = img.shape[0]
+    points = np.array([[i, j] for i in range(n_size) for j in range(n_size)])
 
-n_x = x.shape[0]
-n_cluster = 2
+    cluster_list = [3]
+    for n_cluster in cluster_list:
+        c = initial_random(n_x, n_cluster)
+        # c = initial_far(n_x, n_size)
+        draw_result(n_x, c, image_name, 'default')
+        times = 0
 
-c = initial_random(n_x, n_cluster)
-# c = initial_far(n_x, n_size)
+        for times in range(20):
+            pre_c = c
+        # for times in range(10):
+            fix_term = intra_cluster_distance(x, c, n_size)
+            for i in range(n_x):
+                # i = n_x -1
+                distance = compute_distance(x[i], (i//n_size, i%n_size), x, c) + fix_term
 
-draw_result(n_x, c, filename, 'default')
+                c[i, :] = 0
+                c[i, np.argmin(distance)] = 1
 
+            draw_result(n_x, c, image_name, times)
 
-for times in range(10):
-    fix_term = intra_cluster_distance(x, c, n_size)
-    for i in range(n_x):
-        # i = n_x -1
-        distance = compute_distance(x[i], (i//n_size, i%n_size), x, c, n_size) + fix_term
-        # print(distance)
-        c[i, :] = 0
-        c[i, np.argmin(distance)] = 1
-        # print(c[i])
+        stop = timeit.default_timer()
 
-
-    draw_result(n_x, c, filename, times)
-
-
-
-# third_term =
-# print(intra_cluster_distance(x, c, n_size))
-
-
-
-stop = timeit.default_timer()
-
-print('Time: ', stop - start)
+        print('Time: ', stop - start)
