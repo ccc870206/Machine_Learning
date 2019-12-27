@@ -81,10 +81,10 @@ def load_pkl_data(filename):
 def normal_pick_eigenvector(norm_L, w, n_evector, filename):
     # get eigenvalue and eigenvector
     # e_value, e_vector = np.linalg.eig(norm_L)
+    # e_value = load_pkl_data(filename+"_n_val")
     e_value = load_pkl_data(filename+"_n_val")
-    # e_value = load_pkl_data(filename+"_n_val_0.0001")
+    # e_vector = load_pkl_data(filename+"_n_vec")
     e_vector = load_pkl_data(filename+"_n_vec")
-    # e_vector = load_pkl_data(filename+"_n_vec_0.0001")
 
     D12 = np.diag(1 / np.power(np.sum(w, axis=1), 1 / 2))
     index = np.argsort(e_value)[1:n_evector+1]
@@ -104,10 +104,10 @@ def unnormal_pick_eigenvector(unnorm_L, w, n_evector, filename):
 
     # save_pkl_data(e_value, filename+"_r_val")
     # save_pkl_data(e_vector, filename+"_r_vec")
-    # e_value = load_pkl_data(filename+"_r_val_0.0001")
-    e_value = load_pkl_data(filename+"_r_val")
-    # e_vector = load_pkl_data(filename+"_r_vec_0.0001")
-    e_vector = load_pkl_data(filename+"_r_vec")
+    e_value = load_pkl_data(filename+"_r_val_0.003")
+    # e_value = load_pkl_data(filename+"_r_val")
+    e_vector = load_pkl_data(filename+"_r_vec_0.003")
+    # e_vector = load_pkl_data(filename+"_r_vec")
 
     index = np.argsort(e_value)[1:n_evector+1]
     # index = np.argsort(e_value)[[n_evector-1]]
@@ -131,7 +131,7 @@ def ratio_cut(w, points, n_cluster, filename):
     kmeans_process(new_space, points, 'r')
 
 
-def draw_result(c, points, times, type):
+def draw_result(c, points, times, type, op):
     plt.figure(num=None, figsize=(6.4, 6.4))
     color_arr = np.array([""] * len(c))
 
@@ -147,7 +147,7 @@ def draw_result(c, points, times, type):
 
     plt.gca().invert_yaxis()
     plt.scatter(points[:, 1], points[:, 0], color=color_arr, alpha=0.3, s=7)
-    plt.savefig('/Users/yen/Work/ml_hw6_pic/s_cluster/' + filename + '_' + str(n_cluster)+'_'+type+'_'+str(times) + '.png')
+    plt.savefig('/Users/yen/Work/ml_hw6_pic/s_cluster/' + filename + '_' + str(n_cluster)+'_'+type+'_'+str(times)+'_'+str(op) + '.png')
     plt.show()
     plt.close()
 
@@ -179,7 +179,8 @@ def find_label(label, center, tar_matrix, points, times, type):
     # draw_result(n, label, pos_matrix, center)
 
     # label = kmeans.labels_
-    draw_result(label, points, times, type)
+    draw_result(label, points, times, type,1)
+    draw_result(label, tar_matrix, times, type,2)
     return label
 
 
@@ -202,15 +203,19 @@ def kmeans_self(n, n_cluster, tar_matrix, points, type):
     label = np.zeros(n)
     times = 0
     while times < 20:
+        tag = 0
         print("times", times)
         label = find_label(label, center, tar_matrix, points, times, type)
         for i in range(n_cluster):
-            if len(np.where(label == i)[0]) == 0:
+            if len(np.where(label == i)[0]) < 100:
                 center = initial_random(n_cluster, tar_matrix)
+
                 times = 0
-                continue
-        center, times = update_center(center, n_cluster, times, tar_matrix, label)
-        times += 1
+                tag = -1
+                break
+        if tag != -1:
+            center, times = update_center(center, n_cluster, times, tar_matrix, label)
+            times += 1
 
 
 
@@ -224,7 +229,7 @@ def kmeans_process(new_space, points, type):
 
 start = timeit.default_timer()
 
-filename = 'image1'
+filename = 'image2'
 img=mpimg.imread(filename+'.png')
 img*=255
 # img=img[:20,:20]
@@ -241,7 +246,7 @@ w = similarity_matrix(img, 0.001, 0.001)
 # for i in range(n_x):
 #     w[i][i] = 1
 
-normalize_cut(w, points, n_cluster, filename)
+# normalize_cut(w, points, n_cluster, filename)
 ratio_cut(w, points, n_cluster, filename)
 
 
