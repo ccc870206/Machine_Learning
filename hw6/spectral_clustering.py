@@ -131,7 +131,7 @@ def ratio_cut(w, points, n_cluster, filename):
     kmeans_process(new_space, points, 'r')
 
 
-def draw_result(c, points, times, type, op):
+def draw_result(c, points, times, type, op, center=None):
     plt.figure(num=None, figsize=(6.4, 6.4))
     color_arr = np.array([""] * len(c))
 
@@ -146,7 +146,10 @@ def draw_result(c, points, times, type, op):
             color_arr[i] = 'yellow'
 
     plt.gca().invert_yaxis()
+
     plt.scatter(points[:, 1], points[:, 0], color=color_arr, alpha=0.3, s=7)
+    if op == 2:
+        draw_center(center)
     plt.savefig('/Users/yen/Work/ml_hw6_pic/s_cluster/' + filename + '_' + str(n_cluster)+'_'+type+'_'+str(times)+'_'+str(op) + '.png')
     plt.show()
     plt.close()
@@ -170,6 +173,32 @@ def initial_random(n_cluster, tar_matrix):
     return x
 
 
+def initial_far(n_cluster, tar_matrix):
+    if n_cluster == 2:
+        x_up = np.max(tar_matrix[:, 0])
+        x_down = np.min(tar_matrix[:, 0])
+        y_up = np.max(tar_matrix[:, 1])
+        y_down = np.min(tar_matrix[:, 1])
+
+        return np.array([[x_up, y_up],[x_down, y_down]])
+    #
+    # for i in range(n_cluster):
+    #     x_up = np.max(tar_matrix[:, i])
+    #     x_down = np.min(tar_matrix[:, i])
+    #     # print(x_up, x_down)
+    #     # x_mean = np.mean(tar_matrx[i, :])
+    #     if i == 0:
+    #         x = np.random.uniform(x_down, x_up, (n_cluster, 1))
+    #         # x = np.random.uniform(x_down, x_up, (1, n_cluster))
+    #         # x = np.random.uniform(-0.5, 0.5, (1, n_cluster))
+    #     else:
+    #         y = np.random.uniform(x_down, x_up, (n_cluster, 1))
+    #         # y = np.random.uniform(x_down, x_up, (1, n_cluster))
+    #         # y = np.random.uniform(-0.5, 0.5, (1, n_cluster))
+    #         x = np.concatenate((x, y), axis=1)
+    # return x
+
+
 def find_label(label, center, tar_matrix, points, times, type):
     for i in range(n_x):
         # distance = np.abs(center - tar_matrix[:, i].reshape(2,1))
@@ -180,7 +209,7 @@ def find_label(label, center, tar_matrix, points, times, type):
 
     # label = kmeans.labels_
     draw_result(label, points, times, type,1)
-    draw_result(label, tar_matrix, times, type,2)
+    draw_result(label, tar_matrix, times, type,2, center)
     return label
 
 
@@ -195,9 +224,16 @@ def update_center(center, n_cluster, times, tar_matrix, label):
     return center, times
 
 
+def draw_center(center):
+    plt.scatter(center[:, 1], center[:, 0], color="black", s=7)
+
+
+
+
 def kmeans_self(n, n_cluster, tar_matrix, points, type):
     # center = np.random.uniform(0, 100, (n_cluster, n_cluster))
     center = initial_random(n_cluster, tar_matrix)
+    # center = initial_far(n_cluster, tar_matrix)
     # print("center")
     # print(center)
     label = np.zeros(n)
@@ -206,6 +242,7 @@ def kmeans_self(n, n_cluster, tar_matrix, points, type):
         tag = 0
         print("times", times)
         label = find_label(label, center, tar_matrix, points, times, type)
+        # draw_center(center)
         for i in range(n_cluster):
             if len(np.where(label == i)[0]) < 100:
                 center = initial_random(n_cluster, tar_matrix)

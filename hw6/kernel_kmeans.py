@@ -16,24 +16,27 @@ def initial_random(n_x, n_cluster):
     return c
 
 
-def initial_far(n_x, size):
+def initial_far(n_x, size, n_cluster):
     c = np.zeros((n_x, n_cluster), dtype=int)
-    # for i in range(n_x):
-    #     if i//size > i%size and  i%size > (-i//size+size):
-    #         c[i][0] = 1
-    #     elif i//size > i%size:
-    #         c[i][1] = 1
-    #     elif i // size < i % size and i%size > (-i//size+size):
-    #         c[i][2] = 1
-    #     else:
-    #         c[i][3] = 1
+    if n_cluster == 4:
+        for i in range(n_x):
+            if i//size >= i%size and  i%size >= (-i//size+size):
+                c[i][0] = 1
+            elif i//size > i%size:
+                c[i][1] = 1
+            elif i // size <= i % size and i%size >= (-i//size+size):
+                c[i][2] = 1
+            else:
+                c[i][3] = 1
+
 
     # cluster 2
-    for i in range(n_x):
-        if i//size > i%size:
-            c[i][0] = 1
-        elif i//size:
-            c[i][1] = 1
+    if n_cluster == 2:
+        for i in range(n_x):
+            if i%size > 50:
+                c[i][0] = 1
+            else:
+                c[i][1] = 1
 
     # for i in range(n_x):
     #     if i%size > (-i//size+size):
@@ -139,10 +142,10 @@ for image in image_list:
     n_size = img.shape[0]
     points = np.array([[i, j] for i in range(n_size) for j in range(n_size)])
 
-    cluster_list = [3]
+    cluster_list = [2]
     for n_cluster in cluster_list:
-        c = initial_random(n_x, n_cluster)
-        # c = initial_far(n_x, n_size)
+        # c = initial_random(n_x, n_cluster)
+        c = initial_far(n_x, n_size, n_cluster)
         draw_result(n_x, c, image_name, 'default')
         times = 0
 
