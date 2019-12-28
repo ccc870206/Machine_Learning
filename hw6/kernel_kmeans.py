@@ -1,23 +1,21 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 import math
-import numba as nb
 import matplotlib.pyplot as plt
 import timeit
 import matplotlib.image as mpimg
-from scipy import ndimage
 
 
 def initial_random(n_x, n_cluster):
     c = np.zeros((n_x, n_cluster), dtype=int)
     for i in range(n_x):
         c[i][np.random.randint(0, n_cluster)] = 1
-    # print("c", c)
     return c
 
 
-def initial_far(n_x, size, n_cluster):
+def initial_partition(n_x, size, n_cluster):
     c = np.zeros((n_x, n_cluster), dtype=int)
+    # cluster 4
     if n_cluster == 4:
         for i in range(n_x):
             if i//size >= i%size and  i%size >= (-i//size+size):
@@ -38,12 +36,6 @@ def initial_far(n_x, size, n_cluster):
             else:
                 c[i][1] = 1
 
-    # for i in range(n_x):
-    #     if i%size > (-i//size+size):
-    #         c[i][0] = 1
-    #     elif i//size:
-    #         c[i][1] = 1
-
     return c
 
 
@@ -63,10 +55,8 @@ def similarity_matrix(x, position, gamma_s, gamma_c):
     return squareform(np.exp(d_total))
 
 
-def intra_cluster_distance(x, c, size):
-    n_x = c.shape[0]
+def intra_cluster_distance(x, c):
     n_c = c.shape[1]
-
     total = np.zeros(n_c)
 
     for j in range(n_c):
@@ -74,7 +64,7 @@ def intra_cluster_distance(x, c, size):
         x_in_c = x[c_list]
         p_in_c = points[c_list]
         c_sum = c[:, j].sum()
-        # print(p_in_c)
+
         total[j] = (similarity_matrix(x_in_c, p_in_c, gamma_s, gamma_c).sum()+len(c_list))/c_sum/c_sum
 
     return total
@@ -96,9 +86,6 @@ def compute_distance(xi, si, x, c):
         distance[j] += second_term
 
     return distance
-
-
-
 
 
 def draw_result(n_x, c, filename, times):
@@ -127,7 +114,7 @@ gamma_s = 0.0001
 gamma_c = 0.0001
 
 image_list = ['image2']
-start = timeit.default_timer()
+# start = timeit.default_timer()
 for image in image_list:
     image_name = image
     img = mpimg.imread(image_name + '.png')
@@ -145,16 +132,13 @@ for image in image_list:
     cluster_list = [2]
     for n_cluster in cluster_list:
         # c = initial_random(n_x, n_cluster)
-        c = initial_far(n_x, n_size, n_cluster)
+        c = initial_partition(n_x, n_size, n_cluster)
         draw_result(n_x, c, image_name, 'default')
         times = 0
 
         for times in range(20):
-            pre_c = c
-        # for times in range(10):
-            fix_term = intra_cluster_distance(x, c, n_size)
+            fix_term = intra_cluster_distance(x, c)
             for i in range(n_x):
-                # i = n_x -1
                 distance = compute_distance(x[i], (i//n_size, i%n_size), x, c) + fix_term
 
                 c[i, :] = 0
@@ -162,6 +146,6 @@ for image in image_list:
 
             draw_result(n_x, c, image_name, times)
 
-        stop = timeit.default_timer()
-
-        print('Time: ', stop - start)
+        # stop = timeit.default_timer()
+        #
+        # print('Time: ', stop - start)
