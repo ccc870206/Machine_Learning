@@ -41,24 +41,9 @@ def load_pkl_data(filename):
     return w
 
 
-# def normal_pick_eigenvector(norm_L, w, n_evector, filename):
-#     # get eigenvalue and eigenvector
-#     e_value, e_vector = np.linalg.eig(norm_L)
-#
-#     D12 = np.diag(1 / np.power(np.sum(w, axis=1), 1 / 2))
-#     index = np.argsort(e_value)[1:n_evector+1]
-#     new_space = np.matmul(D12, e_vector[:, index])
-#
-#     return new_space
-
-
 def normal_pick_eigenvector(norm_L, w, n_evector, filename):
     # get eigenvalue and eigenvector
-    # e_value, e_vector = np.linalg.eig(norm_L)
-    # e_value = load_pkl_data(filename+"_n_val")
-    e_value = load_pkl_data(filename+"_n_val")
-    # e_vector = load_pkl_data(filename+"_n_vec")
-    e_vector = load_pkl_data(filename+"_n_vec")
+    e_value, e_vector = np.linalg.eig(norm_L)
 
     D12 = np.diag(1 / np.power(np.sum(w, axis=1), 1 / 2))
     index = np.argsort(e_value)[1:n_evector+1]
@@ -67,51 +52,28 @@ def normal_pick_eigenvector(norm_L, w, n_evector, filename):
     return new_space
 
 
-# def unnormal_pick_eigenvector(unnorm_L, w, n_evector, filename):
-#     # get eigenvalue and eigenvector
-#     D_inv = np.diag(1/np.sum(w, axis=1))
-#     new_matrix = np.matmul(D_inv, unnorm_L)
-#     e_value, e_vector = np.linalg.eig(new_matrix)
-#
-#     index = np.argsort(e_value)[1:n_evector+1]
-#     new_space = e_vector[:, index]
-#
-#     return new_space
-
-
 def unnormal_pick_eigenvector(unnorm_L, w, n_evector, filename):
-    # # get eigenvalue and eigenvector
+    # get eigenvalue and eigenvector
     D_inv = np.diag(1/np.sum(w, axis=1))
-    # new_matrix = np.matmul(D_inv, unnorm_L)
-    # e_value, e_vector = np.linalg.eig(new_matrix)
-
-    # print(new_matrix)
-
-
-    # save_pkl_data(e_value, filename+"_r_val")
-    # save_pkl_data(e_vector, filename+"_r_vec")
-    # e_value = load_pkl_data(filename+"_r_val_0.003")
-    e_value = load_pkl_data(filename+"_r_val")
-    # e_vector = load_pkl_data(filename+"_r_vec_0.003")
-    e_vector = load_pkl_data(filename+"_r_vec")
+    new_matrix = np.matmul(D_inv, unnorm_L)
+    e_value, e_vector = np.linalg.eig(new_matrix)
 
     index = np.argsort(e_value)[1:n_evector+1]
-    # index = np.argsort(e_value)[[n_evector-1]]
     new_space = e_vector[:, index]
+
     return new_space
 
 
+
 def normalize_cut(w, points, n_cluster, filename):
-    # norm_L = normalize_L(w)
-    norm_L = 0
+    norm_L = normalize_L(w)
     new_space = normal_pick_eigenvector(norm_L, w, n_cluster, filename)
 
     kmeans(10000, n_cluster, new_space, points, 'n')
 
 
 def ratio_cut(w, points, n_cluster, filename):
-    # unnorm_L = unnormalize_L(w)
-    unnorm_L = 0
+    unnorm_L = unnormalize_L(w)
     new_space = unnormal_pick_eigenvector(unnorm_L, w, n_cluster, filename)
 
     kmeans(10000, n_cluster, new_space, points, 'r')
@@ -209,7 +171,7 @@ def kmeans(n, n_cluster, tar_matrix, points, type):
 
 
 
-start = timeit.default_timer()
+# start = timeit.default_timer()
 
 filename = 'image2'
 img=mpimg.imread(filename+'.png')
@@ -227,6 +189,6 @@ w = similarity_matrix(img, 0.001, 0.001)
 normalize_cut(w, points, n_cluster, filename)
 ratio_cut(w, points, n_cluster, filename)
 
-stop = timeit.default_timer()
-
-print('Time: ', stop - start)
+# stop = timeit.default_timer()
+#
+# print('Time: ', stop - start)
