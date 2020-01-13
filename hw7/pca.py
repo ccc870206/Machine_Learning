@@ -5,14 +5,14 @@ import pickle as pkl
 import timeit
 import cv2
 
-
+import cv2
 
 from scipy.spatial.distance import pdist, squareform
 
 # np.set_printoptions(threshold=np.inf)
 
-dir_train = '/Users/yen/Downloads/Yale_Face_Database_compress/Training'
-dir_test = '/Users/yen/Downloads/Yale_Face_Database_compress/Testing'
+dir_train = './Yale_Face_Database_compress/Training'
+dir_test = './Yale_Face_Database_compress/Testing'
 
 filename = dir_train+'subject01.centerlight.pgm'
 
@@ -59,7 +59,7 @@ def save_pkl_data(arr, filename):
 
 
 def load_pkl_data(filename):
-    with open(filename+'.pkl', 'rb') as f:
+    with open('./'+filename+'.pkl', 'rb') as f:
         w = pkl.load(f)
     return w
 
@@ -76,9 +76,9 @@ def linear(x):
 def covariance_matrix(matrix):
     # c = np.cov(matrix)
 
-    avg = np.mean(matrix, axis=0)
-    diff = matrix - avg
-    result = np.matmul(diff.T, diff) / 25
+    avg = np.mean(matrix, axis=1)
+    diff = matrix - np.expand_dims(avg, axis=-1)
+    result = np.matmul(diff, diff.T) / 25
     print(result)
     print(result.shape)
     return result
@@ -87,33 +87,44 @@ start = timeit.default_timer()
 if __name__ == '__main__':
     # load_data(dir_test, 'test')
 
-    image_train = load_pkl_data('./train')
+    image_train = load_pkl_data('train')
 
-    image_test = load_pkl_data('./test')
+    image_test = load_pkl_data('test')
     # print(image_test.shape)
+    image25 = image_train[:25].reshape(25, -1).T
+    image25_mean = np.mean(image25, axis=1)
+    c = covariance_matrix(image25)
+    
+    print(c.dtype)
 
-    # image25 = image_train[:25].reshape(25, -1)
-    # c = covariance_matrix(image25)
+    save_pkl_data(c, 'cov_25')
+    #e_value, e_vector = np.linalg.eig(c)
+    #save_pkl_data(e_value, 'eval_25')
+    #save_pkl_data(e_vector, 'evec_25')
+    e_value = load_pkl_data('eval_25')
+    e_vector = load_pkl_data('evec_25')
 
-    # save_pkl_data(c, 'cov_25')
-    # e_value, e_vector = np.linalg.eig(c)
-    # save_pkl_data(e_value, 'eval_25')
-    # save_pkl_data(e_vector, 'evec_25')
-
-    e_value = load_pkl_data('/Users/yen/Downloads/hw7/eval_25')
-    e_vector = load_pkl_data('/Users/yen/Downloads/hw7/evec_25')
-    # print(e_value)
-    # print(e_vector)
-    # print(e_vector.shape)
-    #
     n_evector = 2
-    index = np.argsort(e_value)[1:n_evector+1][::-1]
-    w = e_vector[:, index]
+    sorted_index = np.argsort(e_value)[::-1]
+    e_vector = e_vector[:, sorted_index].astype(np.float)
 
-
-    # # index = np.argsort(e_value)[1:n_evector + 1]
     # index = np.argsort(e_value)[-2:][::-1]
-    # pc = e_vector[:, index]
+    pc = e_vector[:, :n_evector]
+    
+    pc2 = e_vector[:, 1]
+    print(pc2 + image25_mean)
+
+    
+    for idx in range(15):
+        pcd = e_vector[:, idx]# + image25_mean
+        pcd = np.reshape(pcd, (100, 100)) / np.max(pcd)
+
+        cv2.imwrite('figure_{}.png'.format(idx), pcd * 255) 
+    
+    
+    img_new_space = np.matmul(e_vector.T, image25)
+    print(np.var(img_new_space, axis=1)[:15])
+
     # # print(e_value[index])
     # # print(pc)
     # # print(c)
