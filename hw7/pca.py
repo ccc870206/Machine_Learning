@@ -56,6 +56,17 @@ def load_data(dir, type):
     save_pkl_data(img_list, type)
 
 
+def load_label(dir, type):
+    filelist = sorted(os.listdir(dir))
+
+    # print(filelist)
+    label = [int(filename[7:9]) for filename in filelist]
+
+    save_pkl_data(label, 'label_'+type)
+
+    return label
+
+
 
 def save_pkl_data(arr, filename):
     with open('./'+filename+'.pkl', 'wb') as f:
@@ -94,94 +105,6 @@ def covariance(x, y):
     return np.matmul(x1, y1.T)/ x1.shape[1]
 
 
-def PCA(datas, k, kernel=None):
-    if callable(kernel):
-        datas = kernel(datas, datas)
-        N = datas.shape[0]
-        N1 = np.ones((N, N)) / N
-        S = (datas
-             - np.matmul(N1, datas)
-             - np.matmul(datas, N1)
-             + np.matmul(np.matmul(N1, datas), N1)
-             ) / N
-    else:
-        S = covariance(datas.T, datas.T)
-
-    value, vector = np.linalg.eigh(S)
-
-
-    # value = load_pkl_data('/Users/yen/Downloads/hw7/eval_25')
-    # vector = load_pkl_data('/Users/yen/Downloads/hw7/evec_25')
-
-    # showEigen(value, vector, isMin=False)
-
-    start_idx = 0
-    max_idxs = np.flip(np.argsort(value))
-    W = np.concatenate([
-        vector[:, max_idxs[i]][:, None]
-        for i in range(start_idx, k + start_idx)
-    ], axis=1)
-
-    # whitening
-    if callable(kernel):
-        W /= np.sqrt(value[max_idxs[start_idx:start_idx + k]])[None, :]
-
-    return np.matmul(datas, W), W, value, vector
-
-
-def showFaces(faces, col=10):
-    f = faces.reshape(-1, 100, 100)
-    n = f.shape[0]
-    all_faces = []
-    for i in range(int(n / col)):
-        all_faces += [np.concatenate(f[col * i:col * (i + 1)], axis=1)]
-
-    all_faces = np.concatenate(all_faces, axis=0)
-    plt.figure(figsize=(4 * (n / col), 4 * col))
-    plt.imshow(all_faces, cmap='gray')
-    plt.show()
-
-
-def pca_face(X, no_dims=15):
-    X_mean = np.mean(X, axis=0)
-    diff_X = X - X_mean
-
-    # cov_mat = np.matmul(diff_X, diff_X.T)
-
-    cov_mat = np.cov(diff_X, rowvar=False)
-    eigen_values, eigen_vectors = np.linalg.eigh(cov_mat)
-    print(eigen_vectors)
-    topk_eigen_values = np.argsort(eigen_values)[: -(no_dims + 1): -1]
-    matrix_w = eigen_vectors[:, topk_eigen_values]
-    print(matrix_w)
-    # eigenspace and eigenvector of D.TD
-    # eigen_values_D, eigen_vectors_D = np.linalg.eig(cov_mat)
-
-    # eigenspace and eigenvector of covariance
-    # eigen_vectors = np.matmul(diff_X.T, eigen_vectors_D)
-
-    fig = plt.figure(figsize=(20, 20))
-    for i in range(15):
-        img = matrix_w[:, i].reshape(100, 100)
-        fig.add_subplot(5, 5, i + 1)
-        plt.axis('off')
-        plt.imshow(img, cmap='gray')
-    plt.savefig('eigenface.jpg')
-
-    X_test = X[np.random.choice(X.shape[0], 10, replace=False)]
-
-    test_feature = np.matmul(X_test, matrix_w)
-    test_restore = np.matmul(test_feature.T, X_test) + X_mean
-
-    fig = plt.figure(figsize=(20, 20))
-    for i in range(10):
-        img = test_restore[i].reshape(100, 100)
-        fig.add_subplot(2, 5, i + 1)
-        plt.axis('off')
-        plt.imshow(img, cmap='gray')
-    plt.savefig('face_restore.jpg')
-
-
 def linear_kernel(x):
     return np.matmul(x, x.T)
 
@@ -194,12 +117,20 @@ def linear_kernel(x):
 #
 start = timeit.default_timer()
 if __name__ == '__main__':
-    # load_data(dir_test, 'test')
+    # image_train = load_data(dir_train, 'train')
+    # image_test = load_data(dir_test, 'test')
+
+    # label_train = load_label(dir_train, 'train')
+    # label_test = load_label(dir_test, 'test')
+
 
 
     image_train = load_pkl_data('train').astype('int')
     image_test = load_pkl_data('test')
 
+    label_train = load_pkl_data('label_train')
+    label_test = load_pkl_data('label_test')
+    print(len(label_test))
 
     dim = 25
 
@@ -215,37 +146,39 @@ if __name__ == '__main__':
 
     ###c = np.cov(image25_center)
 
-    k = linear_kernel(image25_center)
-    N1 = np.ones((image25_center.shape[0],image25_center.shape[0] ))/25
-    c = k - np.matmul(k, N1) - np.matmul(N1, k) + np.matmul(N1, np.matmul(k, N1))
+    ###k = linear_kernel(image25_center)
+    ###N1 = np.ones((image25_center.shape[0],image25_center.shape[0] ))/25
+    ###c = k - np.matmul(k, N1) - np.matmul(N1, k) + np.matmul(N1, np.matmul(k, N1))
 
-
-    print(c)
-    # print(c, c.shape)
-    save_pkl_data(c, 'cov_kernel')
 
     #print(c)
-    
-    e_value, e_vector = np.linalg.eigh(c)
+    # print(c, c.shape)
+    ###save_pkl_data(c, 'cov_kernel')
 
-    save_pkl_data(e_value, 'eval_kernel')
-    save_pkl_data(e_vector, 'evec_kernel')
+    #print(c)
+
+    ###e_value, e_vector = np.linalg.eigh(c)
+
+    ###save_pkl_data(e_value, 'eval_kernel')
+    ###save_pkl_data(e_vector, 'evec_kernel')
     #e_value = load_pkl_data('eval_25_new')
     #e_vector = load_pkl_data('evec_25_new')
 
     #print(e_value)
     #print(e_vector)
-    
-    sorted_index = np.argsort(e_value)[::-1]
-    e_vector = e_vector[:, sorted_index]
 
-    save_pkl_data(e_vector, 'evec_kernel_sort')
+    ###sorted_index = np.argsort(e_value)[::-1]
+    ###e_vector = e_vector[:, sorted_index]
+
+    ###save_pkl_data(e_vector, 'evec_kernel_sort')
     #e_vector = load_pkl_data('evec_25_new')
     #save_pkl_data(e_vector, 'evec_25_new_sort')
 
-    
-    
-    #e_vector = load_pkl_data('evec_25_new_sort')
+
+
+    e_vector = load_pkl_data('evec_25_new_sort')
+    w = e_vector[:, :dim + 1]
+    """
     w = e_vector[:,:dim+1]
     print("e_vec", e_vector)
     fig = plt.figure(figsize=(20, 20))
@@ -256,11 +189,16 @@ if __name__ == '__main__':
         plt.imshow(pcd, cmap='gray')
     plt.savefig('./my_eigenface.png')
     plt.clf()
+    """
         #cv2.imwrite('./figure_{}.png'.format(idx), pcd*25)
 
         #print(pcd*255)
     #print(e_vector)
 
+
+
+
+    """
     random_index = np.random.choice(25, 10)
     image10 = image25[:,random_index]
     print(image10.shape)
@@ -275,70 +213,33 @@ if __name__ == '__main__':
         plt.imshow(reconstruct, cmap='gray')
     plt.savefig('./my_restore.png')
     plt.clf()
-        #cv2.imwrite('./new_img_{}.png'.format(i), reconstruct)
-    #img_new_space = np.matmul(e_vector.T, image25)
-    #print(np.var(img_new_space, axis=1)[:15])
-    
+    """
 
-    # print(image25_center, image25_center.shape)
+    train = image_train.reshape(135, -1).T
+    test = image_test.reshape(30, -1).T
 
 
-    # print(image25.shape)
+    new_space = np.matmul(w, w.T)
+    r_train = np.matmul(new_space, train)
+    r_test = np.matmul(new_space, test)
 
+    # for i in range(30):
+    acc = 0
+    for i in range(1):
+        target = r_test[:, i]
+        diff = r_train - target
+        distance = np.linalg.norm(diff, axis=0)
+        idx = np.argmin(distance)
+        print("predict:", label_train[idx])
+        print("truth:", label_test[i])
+        if label_train[idx] == label_test[i]:
+            acc +=1
+    print("acc:", acc/30*100, "%")
 
+        # diff = center - tar_matrix[i, :].reshape(1, -1)
+        # distance = np.linalg.norm(diff, axis=1)
+        # label[i] = np.argmin(distance)
 
-    # for i in range(25):
-    #
-    #     plt.imshow(image_train[i], cmap='gray')
-    #     print(image_train)
-    #     plt.show()
-
-
-    # print(image_test.shape)
-    # image25 = image_train[:25].reshape(25, -1)
-    # image25_mean = np.mean(image25, axis=1)
-    # c = covariance_matrix(image25)
-
-
-
-
-    # save_pkl_data(c, '/Users/yen/Downloads/hw7/cov_25')
-    #e_value, e_vector = np.linalg.eig(c)
-
-    #save_pkl_data(e_value, 'eval_25')
-    #save_pkl_data(e_vector, 'evec_25')
-    # e_value = load_pkl_data('/Users/yen/Downloads/hw7/eval_25')
-    # e_vector = load_pkl_data('/Users/yen/Downloads/hw7/evec_25')
-
-    #
-    # face_pcaspace, face_eigen, face_eva, face_evc = PCA(image25, 25)
-    # print(face_eigen)
-    # print(face_eigen.shape)
-    # showFaces(face_eigen.T, col=5)
-
-
-
-    #
-    # n_evector = 2
-    # sorted_index = np.argsort(e_value)[::-1]
-    # e_vector = e_vector[:, sorted_index].astype(np.float)
-    #
-    # # index = np.argsort(e_value)[-2:][::-1]
-    # pc = e_vector[:, :n_evector]
-    #
-    # pc2 = e_vector[:, 1]
-    # # print(pc2 + image25_mean)
-    #
-    #
-    # for idx in range(15):
-    #     pcd = e_vector[:, idx]# + image25_mean
-    #     pcd = np.reshape(pcd, (100, 100)) / np.max(pcd)
-    #
-    #     cv2.imwrite('/Users/yen/Downloads/hw7/figure_{}.png'.format(idx), pcd * 255)
-    #
-    #
-    # img_new_space = np.matmul(e_vector.T, image25)
-    # print(np.var(img_new_space, axis=1)[:15])
 
 
     stop = timeit.default_timer()
