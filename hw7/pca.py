@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import os
 import pickle as pkl
@@ -138,6 +141,51 @@ def showFaces(faces, col=10):
     plt.imshow(all_faces, cmap='gray')
     plt.show()
 
+
+def pca_face(X, no_dims=15):
+    X_mean = np.mean(X, axis=0)
+    diff_X = X - X_mean
+
+    # cov_mat = np.matmul(diff_X, diff_X.T)
+
+    cov_mat = np.cov(diff_X, rowvar=False)
+    eigen_values, eigen_vectors = np.linalg.eigh(cov_mat)
+    print(eigen_vectors)
+    topk_eigen_values = np.argsort(eigen_values)[: -(no_dims + 1): -1]
+    matrix_w = eigen_vectors[:, topk_eigen_values]
+    print(matrix_w)
+    # eigenspace and eigenvector of D.TD
+    # eigen_values_D, eigen_vectors_D = np.linalg.eig(cov_mat)
+
+    # eigenspace and eigenvector of covariance
+    # eigen_vectors = np.matmul(diff_X.T, eigen_vectors_D)
+
+    fig = plt.figure(figsize=(20, 20))
+    for i in range(15):
+        img = matrix_w[:, i].reshape(100, 100)
+        fig.add_subplot(5, 5, i + 1)
+        plt.axis('off')
+        plt.imshow(img, cmap='gray')
+    plt.savefig('eigenface.jpg')
+
+    X_test = X[np.random.choice(X.shape[0], 10, replace=False)]
+
+    test_feature = np.matmul(X_test, matrix_w)
+    test_restore = np.matmul(test_feature.T, X_test) + X_mean
+
+    fig = plt.figure(figsize=(20, 20))
+    for i in range(10):
+        img = test_restore[i].reshape(100, 100)
+        fig.add_subplot(2, 5, i + 1)
+        plt.axis('off')
+        plt.imshow(img, cmap='gray')
+    plt.savefig('face_restore.jpg')
+
+
+def linear_kernel(x):
+    return np.matmul(x, x.T)
+
+
 # with PIL.Image.open(
 #         './Yale_Face_Database/Training/subject01.centerlight.pgm'
 # ) as im:
@@ -148,26 +196,89 @@ start = timeit.default_timer()
 if __name__ == '__main__':
     # load_data(dir_test, 'test')
 
+
     image_train = load_pkl_data('train').astype('int')
     image_test = load_pkl_data('test')
 
-    image25 = image_train[:25].reshape(25, -1).T
 
-    image25_mean = np.mean(image25, axis=1).reshape(-1, 1)
+    dim = 25
+
+    image25 = image_train[:25].reshape(25, -1).T
+    #image25 = image_train[:25].reshape(25, -1)
+    #pca_face(image25, 25)
+
+    image25_mean = np.mean(image25, axis=1).reshape(-1,1)
     #
     # print(image25, image25.shape)
     # print(image25_mean)
-    image25_center = (image25 - image25_mean)/25
+    image25_center = (image25 - image25_mean)
 
-    c = np.cov(image25_center)
+    ###c = np.cov(image25_center)
 
-    # save_pkl_data(c, 'cov_new')
-    #
+    k = linear_kernel(image25_center)
+    N1 = np.ones((image25_center.shape[0],image25_center.shape[0] ))/25
+    c = k - np.matmul(k, N1) - np.matmul(N1, k) + np.matmul(N1, np.matmul(k, N1))
+
+
+    print(c)
+    # print(c, c.shape)
+    save_pkl_data(c, 'cov_kernel')
+
+    #print(c)
+    
     e_value, e_vector = np.linalg.eigh(c)
-    #
-    # save_pkl_data(e_value, 'eval_25_new')
-    # save_pkl_data(e_vector, 'evec_25_new')
 
+    save_pkl_data(e_value, 'eval_kernel')
+    save_pkl_data(e_vector, 'evec_kernel')
+    #e_value = load_pkl_data('eval_25_new')
+    #e_vector = load_pkl_data('evec_25_new')
+
+    #print(e_value)
+    #print(e_vector)
+    
+    sorted_index = np.argsort(e_value)[::-1]
+    e_vector = e_vector[:, sorted_index]
+
+    save_pkl_data(e_vector, 'evec_kernel_sort')
+    #e_vector = load_pkl_data('evec_25_new')
+    #save_pkl_data(e_vector, 'evec_25_new_sort')
+
+    
+    
+    #e_vector = load_pkl_data('evec_25_new_sort')
+    w = e_vector[:,:dim+1]
+    print("e_vec", e_vector)
+    fig = plt.figure(figsize=(20, 20))
+    for idx in range(dim):
+        pcd = w[:, idx]
+        pcd = np.reshape(pcd, (100, 100))
+        fig.add_subplot(5, 5, idx + 1)
+        plt.imshow(pcd, cmap='gray')
+    plt.savefig('./my_eigenface.png')
+    plt.clf()
+        #cv2.imwrite('./figure_{}.png'.format(idx), pcd*25)
+
+        #print(pcd*255)
+    #print(e_vector)
+
+    random_index = np.random.choice(25, 10)
+    image10 = image25[:,random_index]
+    print(image10.shape)
+    fig = plt.figure(figsize=(20, 20))
+    for i in range(10):
+        new_space = np.matmul(w, w.T)
+        reconstruct = np.matmul(new_space, image10[:,i]).reshape(100, 100)
+        
+        fig.add_subplot(5, 4, i*2 + 1)
+        plt.imshow(image10[:,i].reshape(100, 100), cmap='gray')
+        fig.add_subplot(5, 4, i*2 + 2)
+        plt.imshow(reconstruct, cmap='gray')
+    plt.savefig('./my_restore.png')
+    plt.clf()
+        #cv2.imwrite('./new_img_{}.png'.format(i), reconstruct)
+    #img_new_space = np.matmul(e_vector.T, image25)
+    #print(np.var(img_new_space, axis=1)[:15])
+    
 
     # print(image25_center, image25_center.shape)
 
