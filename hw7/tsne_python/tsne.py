@@ -13,6 +13,8 @@
 #  Copyright (c) 2008 Tilburg University. All rights reserved.
 
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import pylab
 
 
@@ -139,7 +141,17 @@ def tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0, is_tsne=1)
     P = P * 4.									# early exaggeration
     P = np.maximum(P, 1e-12)
 
+    """
+    pylab.scatter(Y[:, 0], Y[:, 1], 20, labels)
+    if is_tsne == 1:
+        pylab.savefig('tsne_0.png')
+    else:
+        pylab.savefig('sne_0.png')
+    pylab.clf()
+    """
+
     # Run iterations
+    # max_iter = 1
     for iter in range(max_iter):
 
         # Compute pairwise affinities
@@ -154,7 +166,7 @@ def tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0, is_tsne=1)
             # Compute gradient
             PQ = P - Q
             for i in range(n):
-                dY[i, :] = np.sum(np.tile(PQ[:, i], (no_dims, 1)).T * (Y[i, :] - Y), 0)
+                dY[i, :] = np.sum(np.tile(PQ[:, i] * num[:, i], (no_dims, 1)).T * (Y[i, :] - Y), 0)
         else:
             sum_Y = np.sum(np.square(Y), 1)
             num = -2. * np.dot(Y, Y.T)
@@ -166,7 +178,7 @@ def tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0, is_tsne=1)
             # Compute gradient
             PQ = P - Q
             for i in range(n):
-                dY[i, :] = np.sum(np.tile(PQ[:, i] * num[:, i], (no_dims, 1)).T * (Y[i, :] - Y), 0)
+                dY[i, :] = np.sum(np.tile(PQ[:, i], (no_dims, 1)).T * (Y[i, :] - Y), 0)
 
         # Perform the update
         if iter < 20:
@@ -183,11 +195,41 @@ def tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0, is_tsne=1)
         # Compute current value of cost function
         if (iter + 1) % 10 == 0:
             C = np.sum(P * np.log(P / Q))
-            print("Iteration %d: error is %f" % (iter + 1, C))
+            print(str(perplexity) + " Iteration %d: error is %f" % (iter + 1, C))
 
         # Stop lying about P-values
         if iter == 100:
             P = P / 4.
+
+        """
+        # Visualize the process
+        if (iter + 1) % 100 == 0:
+            pylab.scatter(Y[:, 0], Y[:, 1], 20, labels)
+            # pylab.show()
+            if is_tsne == 1:
+                pylab.savefig('tsne_{}.png'.format(iter + 1))
+            else:
+                pylab.savefig('sne_{}.png'.format(iter + 1))
+            pylab.clf()
+        """
+
+    """
+    pylab.imshow(P, cmap='hot')
+    if is_tsne == 1:
+        pylab.savefig('P_tsne.png')
+    else:
+        pylab.savefig('P_sne.png')
+    pylab.clf()
+
+
+    pylab.imshow(Q, cmap='hot')
+    if is_tsne == 1:
+        pylab.savefig('Q_tsne.png')
+    else:
+        pylab.savefig('Q_sne.png')
+
+    pylab.clf()
+    """
 
     # Return solution
     return Y
@@ -198,6 +240,16 @@ if __name__ == "__main__":
     print("Running example on 2,500 MNIST digits...")
     X = np.loadtxt("mnist2500_X.txt")
     labels = np.loadtxt("mnist2500_labels.txt")
-    Y = tsne(X, 2, 50, 20.0)
-    pylab.scatter(Y[:, 0], Y[:, 1], 20, labels)
-    pylab.show()
+    is_tsne = 0
+
+    # perplexity_list = [5, 15]
+    perplexity_list = [5, 15, 25, 35, 45, 50]
+    for perplexity in perplexity_list:
+        Y = tsne(X, 2, 50, perplexity, is_tsne)
+        pylab.scatter(Y[:, 0], Y[:, 1], 20, labels)
+        #pylab.show()
+        if is_tsne == 1:
+            pylab.savefig('tsne_final_{}.png'.format(perplexity))
+        else:
+            pylab.savefig('sne_final_{}.png'.format(perplexity))
+        pylab.clf()
